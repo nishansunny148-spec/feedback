@@ -26,8 +26,8 @@ cp .env.example .env
 
 `.env` contents:
 ```env
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-publishable-key
+VITE_SUPABASE_URL=
+VITE_SUPABASE_ANON_KEY=
 VITE_TURNSTILE_SITE_KEY=
 VITE_MAX_RECORDING_SECONDS=180
 VITE_APP_NAME=Voice Feedback
