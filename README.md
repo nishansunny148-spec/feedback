@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Voice Feedback System
 
 A production-ready voice-note client feedback system built with **Vite**, **React 18**, **TypeScript**, **Tailwind CSS**, and **Supabase** (Postgres + Storage + Auth + Realtime).
@@ -102,3 +103,6 @@ npm run typecheck
 # Build production bundle
 npm run build
 ```
+=======
+# feedback
+>>>>>>> 69f28dc70557188f9882c4a988eb53f9d71181d1
