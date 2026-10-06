@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Share your feedback · Voice Feedback</title>
+    <meta
+      name="description"
+      content="Record a quick voice note and answer a few questions about your project. It takes less than a minute."
+    />
+    <meta name="theme-color" content="#0A0A0B" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#FAFAF7" media="(prefers-color-scheme: light)" />
+    <meta name="color-scheme" content="dark light" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Share your feedback" />
+    <meta
+      property="og:description"
+      content="Record a quick voice note and answer a few questions. It takes less than a minute."
+    />
+    <meta name="twitter:card" content="summary" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap"
+    />
+
+    <script>
+      (function () {
+        try {
+          var pref = localStorage.getItem('vf-theme');
+          var dark = pref === 'dark' || (pref !== 'light' && !matchMedia('(prefers-color-scheme: light)').matches);
+          document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+        } catch (e) {}
+      })();
+    </script>
+    <script type="module" crossorigin src="/assets/index-DSfTIdk3.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/supabase-SU9mistK.js">
+    <link rel="stylesheet" crossorigin href="/assets/index-IgsVmA2j.css">
+  </head>
+  <body>
+    <noscript>This page needs JavaScript to record and send your feedback.</noscript>
+    <div id="root"></div>
+  </body>
+</html>
