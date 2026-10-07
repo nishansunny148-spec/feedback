@@ -1,6 +1,0 @@
-import{c as h,K as u,N as i,r}from"./index-DSfTIdk3.js";/**
- * @license lucide-react v0.460.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */const w=h("Volume2",[["path",{d:"M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z",key:"uqj9uw"}],["path",{d:"M16 9a5 5 0 0 1 0 6",key:"1q6k2b"}],["path",{d:"M19.364 18.364a9 9 0 0 0 0-12.728",key:"ijwkga"}]]);async function f(t,s){const{error:e}=await u().auth.signInWithPassword({email:t.trim(),password:s});if(e)throw i(e)}async function l(){const{error:t}=await u().auth.signOut();if(t)throw i(t)}async function g(){const{data:t,error:s}=await u().auth.getSession();if(s)throw i(s);return t.session}function d(t){const{data:s}=u().auth.onAuthStateChange((e,n)=>t(n));return()=>s.subscription.unsubscribe()}function b(){const[t,s]=r.useState(null),[e,n]=r.useState(!0);return r.useEffect(()=>{let a=!0;g().then(o=>{a&&(s(o),n(!1))}).catch(()=>{a&&(s(null),n(!1))});const c=d(o=>{a&&(s(o),n(!1))});return()=>{a=!1,c()}},[]),{session:t,user:t?.user??null,loading:e,signIn:f,signOut:l}}export{w as V,b as u};

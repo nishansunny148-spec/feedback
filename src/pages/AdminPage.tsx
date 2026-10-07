@@ -12,7 +12,7 @@ import { Skeleton } from '../components/ui/Skeleton';
 import { useAuth } from '../hooks/useAuth';
 import { useFeedbackList } from '../hooks/useFeedbackList';
 import { listClients } from '../services/clients.service';
-import type { Feedback, FeedbackFilters, FeedbackSort, FeedbackStatus, SortDirection } from '../types/feedback';
+import type { Feedback, FeedbackFilters, FeedbackSort, FeedbackStatus, Satisfaction, SortDirection } from '../types/feedback';
 
 export const AdminPage: React.FC = () => {
   const { session, loading: authLoading } = useAuth();
@@ -25,6 +25,7 @@ export const AdminPage: React.FC = () => {
   // Sync state with URL search params
   const initialFilters: FeedbackFilters = {
     status: (searchParams.get('status') as FeedbackStatus) || undefined,
+    satisfaction: (searchParams.get('satisfaction') as Satisfaction) || undefined,
     search: searchParams.get('search') || '',
     rating: searchParams.get('rating') ? Number(searchParams.get('rating')) : undefined,
     clientName: searchParams.get('client') || undefined,
@@ -72,6 +73,7 @@ export const AdminPage: React.FC = () => {
     setFilters(newFilters);
     const params = new URLSearchParams();
     if (newFilters.status) params.set('status', newFilters.status);
+    if (newFilters.satisfaction) params.set('satisfaction', newFilters.satisfaction);
     if (newFilters.search) params.set('search', newFilters.search);
     if (newFilters.rating) params.set('rating', String(newFilters.rating));
     if (newFilters.clientName) params.set('client', newFilters.clientName);

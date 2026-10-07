@@ -26,7 +26,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     ref,
   ) => {
     const baseStyles =
-      'inline-flex items-center justify-center font-medium transition-all duration-200 focus-ring rounded-control disabled:opacity-50 disabled:pointer-events-none select-none group cursor-pointer';
+      'inline-flex items-center justify-center font-bold transition-all duration-200 focus-ring rounded-control disabled:opacity-50 disabled:pointer-events-none select-none group cursor-pointer';
 
     const variants = {
       primary:

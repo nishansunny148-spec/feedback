@@ -115,7 +115,7 @@ export const AudioPreview: React.FC<AudioPreviewProps> = ({ blob, durationSecond
             className="range"
             aria-label="Seek audio"
           />
-          <div className="flex justify-between text-xs font-mono text-fg-3 tabular">
+          <div className="flex justify-between text-xs text-fg-3 tabular">
             <span>{formatClock(currentTime)}</span>
             <span>{formatClock(effectiveDuration)}</span>
           </div>

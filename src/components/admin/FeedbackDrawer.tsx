@@ -2,11 +2,13 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Calendar, Check, Copy, Star, Trash2, X } from 'lucide-react';
 import React, { useState } from 'react';
 import { copyText } from '../../lib/clipboard';
+import { getSatisfactionOption, QUESTION_1_LABEL } from '../../lib/constants';
 import { formatAbsolute, formatMime, formatRelative } from '../../lib/format';
 import type { Feedback, FeedbackStatus } from '../../types/feedback';
 import { Button } from '../ui/Button';
 import { Dialog } from '../ui/Dialog';
 import { AudioPlayer } from './AudioPlayer';
+import { SatisfactionBadge } from './SatisfactionBadge';
 import { StatusSelect } from './StatusSelect';
 
 export interface FeedbackDrawerProps {
@@ -27,6 +29,8 @@ export const FeedbackDrawer: React.FC<FeedbackDrawerProps> = ({
   const [deleting, setDeleting] = useState<boolean>(false);
 
   if (!item) return null;
+
+  const answer = item.satisfaction ? getSatisfactionOption(item.satisfaction) : null;
 
   const handleCopy = async (key: string, text: string) => {
     const ok = await copyText(text);
@@ -72,12 +76,17 @@ export const FeedbackDrawer: React.FC<FeedbackDrawerProps> = ({
           >
             {/* Header */}
             <div className="flex items-start justify-between gap-4 pb-4 border-b border-line/10">
-              <div>
+              <div className="min-w-0">
                 <span className="eyebrow">Feedback Detail</span>
-                <h2 className="text-xl font-bold text-fg mt-1">
-                  {item.client_name || 'Anonymous Client'}
-                </h2>
-                {item.project && <p className="text-xs text-fg-2">{item.project}</p>}
+                <dl className="mt-1 flex flex-col gap-0.5">
+                  <dt className="sr-only">Name</dt>
+                  <dd>
+                    <h2 className="text-xl text-fg break-words">{item.client_name || 'Anonymous Client'}</h2>
+                  </dd>
+                  <dt className="sr-only">Company</dt>
+                  <dd className="text-sm text-fg-2 break-words">{item.company_name || '—'}</dd>
+                </dl>
+                {item.project && <p className="text-xs text-fg-3 mt-0.5">{item.project}</p>}
               </div>
 
               <div className="flex items-center gap-2">
@@ -93,6 +102,24 @@ export const FeedbackDrawer: React.FC<FeedbackDrawerProps> = ({
               </div>
             </div>
 
+            {/* Question 1 answer */}
+            <div className="flex items-center justify-between gap-3 p-4 bg-card border border-line/10 rounded-card">
+              <div className="flex flex-col min-w-0">
+                <span className="text-[11px] text-fg-3 uppercase tracking-wider">{QUESTION_1_LABEL}</span>
+                {answer ? (
+                  <>
+                    <span className="text-base font-bold text-fg leading-tight mt-1">{answer.en}</span>
+                    <span lang="gu" className="text-sm text-fg-2">
+                      {answer.gu}
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-sm text-fg-3 mt-1">Not answered (older submission)</span>
+                )}
+              </div>
+              {answer && <SatisfactionBadge satisfaction={item.satisfaction} />}
+            </div>
+
             {/* Quick Metadata Bar */}
             <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-card border border-line/10 rounded-control">
               <div className="flex items-center gap-2">
@@ -103,9 +130,9 @@ export const FeedbackDrawer: React.FC<FeedbackDrawerProps> = ({
                 />
               </div>
 
-              {item.rating && (
-                <div className="flex items-center gap-1 font-mono text-sm font-semibold text-accent-fg">
-                  <Star className="w-4 h-4 fill-current" />
+              {typeof item.rating === 'number' && (
+                <div className="flex items-center gap-1 tabular text-xs text-fg-3" title="Legacy rating">
+                  <Star className="w-3.5 h-3.5" />
                   {item.rating} / 5
                 </div>
               )}
@@ -115,10 +142,10 @@ export const FeedbackDrawer: React.FC<FeedbackDrawerProps> = ({
             {item.audio_path && (
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between text-xs text-fg-3">
-                  <span className="font-medium text-fg-2 uppercase tracking-wider text-[11px]">
+                  <span className="text-fg-2 uppercase tracking-wider text-[11px]">
                     Voice Note
                   </span>
-                  <span className="font-mono">{formatMime(item.audio_mime)}</span>
+                  <span>{formatMime(item.audio_mime)}</span>
                 </div>
                 <AudioPlayer
                   audioPath={item.audio_path}
@@ -186,7 +213,7 @@ export const FeedbackDrawer: React.FC<FeedbackDrawerProps> = ({
             </div>
 
             {/* Submission Metadata */}
-            <div className="mt-auto pt-4 border-t border-line/10 flex items-center justify-between text-xs text-fg-3 font-mono">
+            <div className="mt-auto pt-4 border-t border-line/10 flex items-center justify-between text-xs text-fg-3 tabular">
               <span className="flex items-center gap-1.5" title={formatAbsolute(item.created_at)}>
                 <Calendar className="w-3.5 h-3.5 text-fg-3" />
                 {formatAbsolute(item.created_at)} ({formatRelative(item.created_at)})

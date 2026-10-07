@@ -78,7 +78,7 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ recorder, onFileFa
             {state === 'recording' ? (
               <>
                 <Waveform analyser={analyser} audioLevel={audioLevel} height={40} />
-                <span className="font-mono text-xs text-rec font-medium tabular">
+                <span className="text-xs text-rec font-medium tabular">
                   {formatClock(elapsedSeconds)} / {formatClock(maxSeconds)}
                 </span>
               </>
@@ -129,7 +129,7 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ recorder, onFileFa
 
           {/* Helper text or fallback trigger */}
           <div className="flex flex-col items-center gap-1">
-            <span className="text-xs font-mono text-fg-3 tabular">
+            <span className="text-xs text-fg-3 tabular">
               {state === 'recording' ? 'Tap to stop' : `Max ${Math.round(maxSeconds / 60)} minutes`}
             </span>
             {onFileFallbackNeeded && state === 'idle' && (

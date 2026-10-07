@@ -11,6 +11,12 @@ let client: SupabaseClient | null = null;
 export function getSupabase(): SupabaseClient {
   if (!client) {
     const { supabaseUrl, supabaseAnonKey } = env();
+    if (!supabaseUrl || !supabaseUrl.trim()) {
+      throw new Error('VITE_SUPABASE_URL environment variable is missing or empty.');
+    }
+    if (!supabaseAnonKey || !supabaseAnonKey.trim()) {
+      throw new Error('VITE_SUPABASE_ANON_KEY environment variable is missing or empty.');
+    }
     client = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
         persistSession: true,

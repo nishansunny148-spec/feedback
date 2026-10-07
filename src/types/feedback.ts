@@ -8,6 +8,8 @@ export const STATUS_LABEL: Record<FeedbackStatus, string> = {
   done: 'Done',
 };
 
+export type Satisfaction = 'excellent' | 'satisfactory' | 'wants_improvements';
+
 export interface Client {
   name: string;
   project: string | null;
@@ -18,8 +20,13 @@ export interface Feedback {
   created_at: string;
   client_id: string | null;
   client_name: string | null;
+  /** Null on rows submitted before the company field existed. */
+  company_name: string | null;
+  /** Null on rows submitted before Question 1 existed. */
+  satisfaction: Satisfaction | null;
   project: string | null;
-  rating: number | null;
+  /** Legacy 1–5 rating, only present on old rows. */
+  rating?: number | null;
   liked: string | null;
   changes_needed: string | null;
   audio_path: string | null;
@@ -30,8 +37,11 @@ export interface Feedback {
 
 export interface SubmitFeedbackInput {
   client_token?: string;
-  client_name?: string;
+  client_name: string;
+  companyName: string;
+  satisfaction: Satisfaction;
   project?: string;
+  /** Legacy, no longer collected by the form. */
   rating?: number;
   liked?: string;
   changes_needed?: string;
@@ -46,6 +56,7 @@ export type SortDirection = 'asc' | 'desc';
 
 export interface ListFeedbackParams {
   status?: FeedbackStatus;
+  satisfaction?: Satisfaction;
   search?: string;
   rating?: number;
   clientName?: string;
@@ -67,12 +78,13 @@ export interface FeedbackStats {
   new: number;
   in_progress: number;
   done: number;
-  averageRating: number | null;
+  satisfaction: Record<Satisfaction, number>;
 }
 
 /** Admin inbox filters, mirrored in the URL query string. */
 export interface FeedbackFilters {
   status?: FeedbackStatus;
+  satisfaction?: Satisfaction;
   search: string;
   rating?: number;
   clientName?: string;

@@ -29,8 +29,7 @@ function decodeJwtRole(token: string): string | null {
 function readEnv(): EnvStatus {
   const problems: string[] = [];
   const supabaseUrl = clean(import.meta.env.VITE_SUPABASE_URL).replace(/\/+$/, '');
-  const supabaseAnonKey =
-    clean(import.meta.env.VITE_SUPABASE_ANON_KEY) || clean(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
+  const supabaseAnonKey = clean(import.meta.env.VITE_SUPABASE_ANON_KEY);
   const turnstile = clean(import.meta.env.VITE_TURNSTILE_SITE_KEY);
   const maxRaw = clean(import.meta.env.VITE_MAX_RECORDING_SECONDS);
   const appName = clean(import.meta.env.VITE_APP_NAME) || 'Voice Feedback';
