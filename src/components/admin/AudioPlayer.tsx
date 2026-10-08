@@ -190,7 +190,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioPath, audioMime, 
           className="range"
           aria-label="Audio playback seek position"
         />
-        <div className="flex justify-between text-xs font-mono text-fg-3 tabular">
+        <div className="flex justify-between text-xs text-fg-3 tabular">
           <span>{formatClock(currentTime)}</span>
           <span>{formatClock(effectiveDuration)}</span>
         </div>
@@ -236,7 +236,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioPath, audioMime, 
             variant="secondary"
             size="sm"
             onClick={cycleSpeed}
-            className="h-8 px-2.5 font-mono text-xs"
+            className="h-8 px-2.5 tabular text-xs"
             aria-label={`Playback speed ${speed}x`}
           >
             {speed}x

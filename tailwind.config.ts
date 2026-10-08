@@ -34,9 +34,13 @@ export default {
         },
       },
       fontFamily: {
-        display: ['"Space Grotesk"', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif'],
-        sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
-        mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Consolas', 'monospace'],
+        // Gotham has no Gujarati glyphs; the browser falls through to Noto Sans Gujarati per glyph.
+        sans: ['Gotham', 'Montserrat', '"Noto Sans Gujarati"', 'system-ui', 'sans-serif'],
+      },
+      // Only Gotham Book (400) and Bold (700) ship; map in-between weights onto them.
+      fontWeight: {
+        medium: '400',
+        semibold: '700',
       },
       borderRadius: {
         control: '12px',

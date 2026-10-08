@@ -26,7 +26,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
             </label>
           )}
           {maxLength && (
-            <span className="text-[11px] font-mono text-fg-3">
+            <span className="text-[11px] tabular text-fg-3">
               {charCount}/{maxLength}
             </span>
           )}

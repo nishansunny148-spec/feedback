@@ -1,8 +1,9 @@
-import { Inbox, LogOut, Moon, Sun, Volume2 } from 'lucide-react';
+import { Inbox, LogOut, Moon, Sun } from 'lucide-react';
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useResolvedTheme, setThemePreference } from '../../lib/theme';
+import { BrandLogo } from '../ui/BrandLogo';
 import { Button } from '../ui/Button';
 
 export interface AdminShellProps {
@@ -27,11 +28,8 @@ export const AdminShell: React.FC<AdminShellProps> = ({ children }) => {
     <div className="min-h-screen flex flex-col md:flex-row bg-bg text-fg">
       {/* Sidebar - Desktop */}
       <aside className="hidden md:flex flex-col w-64 border-r border-line/10 bg-raised/40 p-4 gap-6 shrink-0">
-        <div className="flex items-center gap-2.5 px-2 py-1">
-          <div className="w-8 h-8 rounded-control bg-accent text-accent-ink flex items-center justify-center font-bold">
-            <Volume2 className="w-5 h-5" />
-          </div>
-          <span className="font-display font-bold text-lg tracking-tight">Voice Inbox</span>
+        <div className="flex items-center px-2 py-2">
+          <BrandLogo className="w-[120px]" />
         </div>
 
         <nav className="flex flex-col gap-1">
@@ -46,7 +44,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({ children }) => {
 
         <div className="mt-auto flex flex-col gap-3 pt-4 border-t border-line/10">
           <div className="flex items-center justify-between px-2">
-            <span className="text-xs text-fg-3 font-mono truncate max-w-[140px]" title={user?.email}>
+            <span className="text-xs text-fg-3 truncate max-w-[140px]" title={user?.email}>
               {user?.email}
             </span>
             <Button
@@ -74,11 +72,8 @@ export const AdminShell: React.FC<AdminShellProps> = ({ children }) => {
 
       {/* Topbar - Mobile */}
       <header className="flex md:hidden items-center justify-between p-4 border-b border-line/10 bg-raised/60 backdrop-blur-md sticky top-0 z-30">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-control bg-accent text-accent-ink flex items-center justify-center">
-            <Volume2 className="w-4 h-4" />
-          </div>
-          <span className="font-display font-bold text-base">Voice Inbox</span>
+        <div className="flex items-center">
+          <BrandLogo className="w-[96px]" />
         </div>
 
         <div className="flex items-center gap-2">

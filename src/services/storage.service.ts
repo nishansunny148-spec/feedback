@@ -1,4 +1,3 @@
-import { env } from '../lib/env';
 import { getSupabase } from '../lib/supabase';
 import { toAppError, appError } from './errors';
 
@@ -63,15 +62,7 @@ function randomId(): string {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
-function parseStorageError(status: number, body: string): unknown {
-  try {
-    const json = JSON.parse(body) as { statusCode?: unknown; error?: unknown; message?: unknown };
-    const code = Number(json.statusCode);
-    return { status: Number.isFinite(code) && code > 0 ? code : status, message: json.message, error: json.error };
-  } catch {
-    return { status, message: body };
-  }
-}
+
 
 /**
  * Uploads a voice note to the private bucket. Uses XHR against the Storage
@@ -93,45 +84,16 @@ export async function uploadVoiceNote(
   const safeExt = ext.replace(/[^a-z0-9]/gi, '').toLowerCase() || normalized.ext;
   const path = `${yyyy}/${mm}/${randomId()}.${safeExt}`;
 
-  const { supabaseUrl, supabaseAnonKey } = env();
-  let bearer = supabaseAnonKey;
-  try {
-    const { data } = await getSupabase().auth.getSession();
-    if (data.session?.access_token) bearer = data.session.access_token;
-  } catch {
-    /* anon upload is fine */
-  }
+  onProgress?.(0.1);
 
-  const encodedPath = path.split('/').map(encodeURIComponent).join('/');
-  const url = `${supabaseUrl}/storage/v1/object/${VOICE_BUCKET}/${encodedPath}`;
-
-  await new Promise<void>((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open('POST', url);
-    xhr.timeout = 120_000;
-    xhr.setRequestHeader('Authorization', `Bearer ${bearer}`);
-    xhr.setRequestHeader('apikey', supabaseAnonKey);
-    xhr.setRequestHeader('x-upsert', 'false');
-    xhr.setRequestHeader('Content-Type', normalized.mime);
-    xhr.setRequestHeader('cache-control', 'max-age=3600');
-    if (onProgress) {
-      xhr.upload.onprogress = (event) => {
-        if (event.lengthComputable && event.total > 0) onProgress(Math.min(1, event.loaded / event.total));
-      };
-    }
-    xhr.onload = () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        onProgress?.(1);
-        resolve();
-      } else {
-        reject(toAppError(parseStorageError(xhr.status, xhr.responseText)));
-      }
-    };
-    xhr.onerror = () => reject(appError('network'));
-    xhr.ontimeout = () => reject(appError('network'));
-    xhr.onabort = () => reject(appError('network'));
-    xhr.send(blob);
+  const { error } = await getSupabase().storage.from(VOICE_BUCKET).upload(path, blob, {
+    contentType: normalized.mime,
+    cacheControl: '3600',
+    upsert: false,
   });
+
+  if (error) throw toAppError(error);
+  onProgress?.(1);
 
   return { path, mime: normalized.mime };
 }

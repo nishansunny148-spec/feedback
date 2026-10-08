@@ -1,5 +1,6 @@
 import { Calendar, Filter, Search, X } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
+import { SATISFACTION_OPTIONS } from '../../lib/constants';
 import type { FeedbackFilters, FeedbackStatus } from '../../types/feedback';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
@@ -29,6 +30,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filters, onChange, clients
     setSearchTerm('');
     onChange({
       status: undefined,
+      satisfaction: undefined,
       search: '',
       rating: undefined,
       clientName: undefined,
@@ -41,6 +43,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filters, onChange, clients
 
   const hasActiveFilters = Boolean(
     filters.status ||
+      filters.satisfaction ||
       filters.search ||
       filters.rating ||
       filters.clientName ||
@@ -56,40 +59,69 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filters, onChange, clients
         {/* Search input */}
         <div className="flex-1 max-w-md">
           <Input
-            placeholder="Search name or message content…"
+            placeholder="Search name, company, or message..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             icon={<Search className="w-4 h-4" />}
           />
         </div>
 
-        {/* Status filter pills */}
+        {/* Filter pills and controls */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-          <button
-            type="button"
-            onClick={() => onChange({ ...filters, status: undefined })}
-            className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${
-              filters.status === undefined
-                ? 'bg-accent text-accent-ink font-semibold'
-                : 'bg-card text-fg-2 hover:text-fg'
-            }`}
-          >
-            All
-          </button>
-          {(['new', 'in_progress', 'done'] as FeedbackStatus[]).map((s) => (
+          {/* Status filter pills */}
+          <div className="flex items-center gap-1 border-r border-line/10 pr-2 mr-1">
             <button
-              key={s}
               type="button"
-              onClick={() => onChange({ ...filters, status: s })}
-              className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors whitespace-nowrap ${
-                filters.status === s
-                  ? 'bg-accent text-accent-ink font-semibold'
+              onClick={() => onChange({ ...filters, status: undefined })}
+              className={`px-2.5 py-1 text-xs rounded-full transition-colors ${
+                filters.status === undefined
+                  ? 'bg-fg text-bg font-bold'
                   : 'bg-card text-fg-2 hover:text-fg'
               }`}
             >
-              {s.replace('_', ' ')}
+              All Status
             </button>
-          ))}
+            {(['new', 'in_progress', 'done'] as FeedbackStatus[]).map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => onChange({ ...filters, status: s })}
+                className={`px-2.5 py-1 text-xs rounded-full transition-colors whitespace-nowrap ${
+                  filters.status === s
+                    ? 'bg-fg text-bg font-bold'
+                    : 'bg-card text-fg-2 hover:text-fg'
+                }`}
+              >
+                {s.replace('_', ' ')}
+              </button>
+            ))}
+          </div>
+
+          {/* Satisfaction filter pills */}
+          <div className="flex items-center gap-1">
+            {SATISFACTION_OPTIONS.map((opt) => {
+              const active = filters.satisfaction === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() =>
+                    onChange({
+                      ...filters,
+                      satisfaction: active ? undefined : opt.value,
+                    })
+                  }
+                  className={`px-2.5 py-1 text-xs rounded-full transition-colors whitespace-nowrap ${
+                    active
+                      ? 'bg-accent text-accent-ink font-bold'
+                      : 'bg-card text-fg-2 hover:text-fg'
+                  }`}
+                >
+                  {opt.short}
+                </button>
+              );
+            })}
+          </div>
 
           <Button
             variant="ghost"

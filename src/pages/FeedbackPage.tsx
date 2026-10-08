@@ -1,5 +1,6 @@
 import React from 'react';
 import { FeedbackForm } from '../components/form/FeedbackForm';
+import { BrandLogo } from '../components/ui/BrandLogo';
 import { Card } from '../components/ui/Card';
 import { Skeleton } from '../components/ui/Skeleton';
 import { useClientToken } from '../hooks/useClientToken';
@@ -12,6 +13,10 @@ export const FeedbackPage: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-between p-4 sm:p-8 pt-safe pb-safe px-safe">
       <div className="w-full max-w-form my-auto flex flex-col gap-6">
+        <header className="flex justify-center pt-2">
+          <BrandLogo className="w-[120px] sm:w-[150px]" />
+        </header>
+
         {clientLoading ? (
           <Card variant="glass" className="p-8 flex flex-col gap-6">
             <Skeleton className="h-8 w-48" />

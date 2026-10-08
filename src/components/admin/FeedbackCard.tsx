@@ -1,8 +1,9 @@
-import { Mic, MessageSquare, Star } from 'lucide-react';
+import { Mic, MessageSquare } from 'lucide-react';
 import React from 'react';
 import { formatClock, formatRelative } from '../../lib/format';
 import type { Feedback, FeedbackStatus } from '../../types/feedback';
 import { Card } from '../ui/Card';
+import { SatisfactionBadge } from './SatisfactionBadge';
 import { StatusSelect } from './StatusSelect';
 
 export interface FeedbackCardProps {
@@ -20,10 +21,10 @@ export const FeedbackCard: React.FC<FeedbackCardProps> = ({ item, onClick, onSta
     >
       <div className="flex items-start justify-between gap-2">
         <div>
-          <h4 className="text-sm font-semibold text-fg">
+          <h4 className="text-sm text-fg">
             {item.client_name || 'Anonymous Client'}
           </h4>
-          {item.project && <p className="text-xs text-fg-3">{item.project}</p>}
+          {item.company_name && <p className="text-xs text-fg-3">{item.company_name}</p>}
         </div>
 
         <div onClick={(e) => e.stopPropagation()}>
@@ -32,15 +33,10 @@ export const FeedbackCard: React.FC<FeedbackCardProps> = ({ item, onClick, onSta
       </div>
 
       <div className="flex items-center gap-3 text-xs text-fg-2">
-        {item.rating && (
-          <span className="flex items-center gap-1 font-mono font-medium text-accent-fg">
-            <Star className="w-3.5 h-3.5 fill-current" />
-            {item.rating}/5
-          </span>
-        )}
+        <SatisfactionBadge satisfaction={item.satisfaction} rating={item.rating} />
 
         {item.audio_path ? (
-          <span className="flex items-center gap-1 text-fg-2 font-mono">
+          <span className="flex items-center gap-1 text-fg-2 tabular">
             <Mic className="w-3.5 h-3.5 text-accent-fg" />
             {formatClock(item.audio_duration_sec)}
           </span>

@@ -1,7 +1,8 @@
-import { ArrowDown, ArrowUp, Mic, MessageSquare, Star } from 'lucide-react';
+import { ArrowDown, ArrowUp, Mic, MessageSquare } from 'lucide-react';
 import React from 'react';
 import { formatClock, formatAbsolute, formatRelative } from '../../lib/format';
 import type { Feedback, FeedbackSort, FeedbackStatus, SortDirection } from '../../types/feedback';
+import { SatisfactionBadge } from './SatisfactionBadge';
 import { StatusSelect } from './StatusSelect';
 
 export interface FeedbackTableProps {
@@ -33,23 +34,20 @@ export const FeedbackTable: React.FC<FeedbackTableProps> = ({
     <div className="w-full overflow-x-auto rounded-card border border-line/10 bg-raised/50 shadow-glass">
       <table className="w-full text-left text-sm border-collapse">
         <thead>
-          <tr className="border-b border-line/10 bg-raised text-xs font-mono uppercase text-fg-3">
-            <th scope="col" className="py-3.5 px-4 font-medium">
+          <tr className="border-b border-line/10 bg-raised text-xs uppercase tracking-wider text-fg-3">
+            <th scope="col" className="py-3.5 px-4 font-normal">
               Status
             </th>
-            <th scope="col" className="py-3.5 px-4 font-medium">
-              Client & Project
+            <th scope="col" className="py-3.5 px-4 font-normal">
+              Client
             </th>
-            <th scope="col" className="py-3.5 px-4 font-medium cursor-pointer select-none" onClick={() => toggleSort('rating')}>
-              <div className="flex items-center gap-1">
-                <span>Rating</span>
-                {sort === 'rating' && (dir === 'asc' ? <ArrowUp className="w-3.5 h-3.5" /> : <ArrowDown className="w-3.5 h-3.5" />)}
-              </div>
+            <th scope="col" className="py-3.5 px-4 font-normal">
+              Feedback
             </th>
-            <th scope="col" className="py-3.5 px-4 font-medium">
+            <th scope="col" className="py-3.5 px-4 font-normal">
               Voice Note
             </th>
-            <th scope="col" className="py-3.5 px-4 font-medium cursor-pointer select-none" onClick={() => toggleSort('created_at')}>
+            <th scope="col" className="py-3.5 px-4 font-normal cursor-pointer select-none" onClick={() => toggleSort('created_at')}>
               <div className="flex items-center gap-1">
                 <span>Received</span>
                 {sort === 'created_at' && (dir === 'asc' ? <ArrowUp className="w-3.5 h-3.5" /> : <ArrowDown className="w-3.5 h-3.5" />)}
@@ -77,27 +75,20 @@ export const FeedbackTable: React.FC<FeedbackTableProps> = ({
 
               <td className="py-3.5 px-4">
                 <div className="flex flex-col">
-                  <span className="font-semibold text-fg group-hover:text-accent-fg transition-colors">
+                  <span className="font-bold text-fg group-hover:text-accent-fg transition-colors">
                     {item.client_name || 'Anonymous Client'}
                   </span>
-                  {item.project && <span className="text-xs text-fg-3">{item.project}</span>}
+                  {item.company_name && <span className="text-xs text-fg-3">{item.company_name}</span>}
                 </div>
               </td>
 
               <td className="py-3.5 px-4">
-                {item.rating ? (
-                  <span className="inline-flex items-center gap-1 font-mono font-medium text-accent-fg text-xs">
-                    <Star className="w-3.5 h-3.5 fill-current" />
-                    {item.rating}/5
-                  </span>
-                ) : (
-                  <span className="text-xs text-fg-3">—</span>
-                )}
+                <SatisfactionBadge satisfaction={item.satisfaction} rating={item.rating} />
               </td>
 
               <td className="py-3.5 px-4">
                 {item.audio_path ? (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-accent/10 text-accent-fg font-mono text-xs">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-accent/10 text-accent-fg tabular text-xs">
                     <Mic className="w-3.5 h-3.5" />
                     {formatClock(item.audio_duration_sec)}
                   </span>
