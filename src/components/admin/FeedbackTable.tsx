@@ -1,8 +1,9 @@
-import { ArrowDown, ArrowUp, Mic } from 'lucide-react';
+import { ArrowDown, ArrowUp, ChevronRight, Mic } from 'lucide-react';
 import React from 'react';
-import { formatClock, formatAbsolute, formatRelative } from '../../lib/format';
-import type { Feedback, FeedbackSort, FeedbackStatus, SortDirection } from '../../types/feedback';
-import { SatisfactionBadge } from './SatisfactionBadge';
+import { QUESTIONS, getSatisfactionOption } from '../../lib/constants';
+import { formatAbsolute, formatRelative } from '../../lib/format';
+import type { Choice, Feedback, FeedbackSort, FeedbackStatus, SortDirection } from '../../types/feedback';
+import { Button } from '../ui/Button';
 import { StatusSelect } from './StatusSelect';
 
 export interface FeedbackTableProps {
@@ -13,6 +14,12 @@ export interface FeedbackTableProps {
   dir: SortDirection;
   onSortChange: (sort: FeedbackSort, dir: SortDirection) => void;
 }
+
+const CHOICE_BADGE_STYLE: Record<Choice, string> = {
+  excellent: 'bg-success/15 text-success border-success/30',
+  satisfactory: 'bg-warning/15 text-warning border-warning/30',
+  wants_improvements: 'bg-danger/15 text-danger border-danger/30',
+};
 
 export const FeedbackTable: React.FC<FeedbackTableProps> = ({
   items,
@@ -42,10 +49,10 @@ export const FeedbackTable: React.FC<FeedbackTableProps> = ({
               Client
             </th>
             <th scope="col" className="py-3.5 px-4 font-normal">
-              Question 1
+              Answers
             </th>
             <th scope="col" className="py-3.5 px-4 font-normal">
-              Question 2
+              Notes
             </th>
             <th scope="col" className="py-3.5 px-4 font-normal cursor-pointer select-none" onClick={() => toggleSort('created_at')}>
               <div className="flex items-center gap-1">
@@ -53,63 +60,151 @@ export const FeedbackTable: React.FC<FeedbackTableProps> = ({
                 {sort === 'created_at' && (dir === 'asc' ? <ArrowUp className="w-3.5 h-3.5" /> : <ArrowDown className="w-3.5 h-3.5" />)}
               </div>
             </th>
+            <th scope="col" className="py-3.5 px-4 font-normal text-right">
+              Action
+            </th>
           </tr>
         </thead>
         <tbody className="divide-y divide-line/5">
-          {items.map((item) => (
-            <tr
-              key={item.id}
-              tabIndex={0}
-              onClick={() => onSelect(item)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  onSelect(item);
-                }
-              }}
-              className="group hover:bg-card/70 focus-ring cursor-pointer transition-colors"
-            >
-              <td className="py-3.5 px-4" onClick={(e) => e.stopPropagation()}>
-                <StatusSelect value={item.status} onChange={(status) => onStatusChange(item.id, status)} />
-              </td>
+          {items.map((item) => {
+            const hasAnswers = item.feedback_answers && item.feedback_answers.length > 0;
 
-              <td className="py-3.5 px-4">
-                <div className="flex flex-col">
-                  <span className="font-bold text-fg group-hover:text-accent-fg transition-colors">
-                    {item.client_name || 'Anonymous Client'}
-                  </span>
-                  <span className="text-xs text-fg-3">{item.company_name || '—'}</span>
-                </div>
-              </td>
+            // Answers badges per question
+            const answerBadges = QUESTIONS.map((q) => {
+              let choice: Choice | null = null;
+              if (hasAnswers) {
+                const found = item.feedback_answers!.find((a) => a.question_no === q.no);
+                if (found) choice = found.choice;
+              } else if (q.no === 1 && item.satisfaction) {
+                choice = item.satisfaction;
+              } else if (q.no === 2 && item.satisfaction_q2) {
+                choice = item.satisfaction_q2;
+              }
 
-              <td className="py-3.5 px-4">
-                <SatisfactionBadge satisfaction={item.satisfaction} rating={item.rating} />
-              </td>
-
-              <td className="py-3.5 px-4 max-w-xs">
-                <div className="flex items-center gap-2 min-w-0">
-                  {item.audio_path && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent/10 text-accent-fg tabular text-xs font-medium shrink-0">
-                      <Mic className="w-3 h-3" />
-                      {formatClock(item.audio_duration_sec)}
-                    </span>
-                  )}
+              if (!choice) {
+                return (
                   <span
-                    className="text-xs text-fg-2 truncate"
-                    title={item.message || item.liked || item.changes_needed || undefined}
+                    key={q.no}
+                    className="inline-flex items-center px-1.5 py-0.5 text-[11px] font-semibold rounded bg-raised text-fg-3 border border-line/10"
+                    title={`Q${q.no}: Unanswered`}
                   >
-                    {item.message || item.liked || item.changes_needed || (item.audio_path ? 'Voice note' : '—')}
+                    Q{q.no} -
                   </span>
-                </div>
-              </td>
+                );
+              }
 
-              <td className="py-3.5 px-4">
-                <span title={formatAbsolute(item.created_at)} className="text-xs text-fg-3 tabular">
-                  {formatRelative(item.created_at)}
+              const opt = getSatisfactionOption(choice);
+              return (
+                <span
+                  key={q.no}
+                  className={`inline-flex items-center px-2 py-0.5 text-[11px] font-bold rounded-full border whitespace-nowrap ${CHOICE_BADGE_STYLE[choice]}`}
+                  title={`Q${q.no}: ${opt.en} / ${opt.gu}`}
+                >
+                  Q{q.no}: {opt.short}
                 </span>
-              </td>
-            </tr>
-          ))}
+              );
+            });
+
+            // Count voice notes
+            let voiceCount = 0;
+            if (hasAnswers) {
+              voiceCount = item.feedback_answers!.filter((a) => Boolean(a.audio_path)).length;
+            } else if (item.audio_path) {
+              voiceCount = 1;
+            }
+
+            // Extract first non-empty message preview
+            let firstMsg: string | null = null;
+            if (hasAnswers) {
+              const ansWithMsg = item.feedback_answers!.find((a) => Boolean(a.message?.trim()));
+              if (ansWithMsg?.message) firstMsg = ansWithMsg.message.trim();
+            }
+            if (!firstMsg) {
+              firstMsg = item.message?.trim() || item.liked?.trim() || item.changes_needed?.trim() || null;
+            }
+
+            const truncatedPreview = firstMsg
+              ? firstMsg.length > 40
+                ? firstMsg.slice(0, 40) + '…'
+                : firstMsg
+              : null;
+
+            return (
+              <tr
+                key={item.id}
+                tabIndex={0}
+                onClick={() => onSelect(item)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onSelect(item);
+                  }
+                }}
+                className="group hover:bg-card/70 focus-ring cursor-pointer transition-colors"
+              >
+                {/* Status column */}
+                <td className="py-3.5 px-4" onClick={(e) => e.stopPropagation()}>
+                  <StatusSelect value={item.status} onChange={(status) => onStatusChange(item.id, status)} />
+                </td>
+
+                {/* Client column */}
+                <td className="py-3.5 px-4">
+                  <div className="flex flex-col">
+                    <span className="font-bold text-fg group-hover:text-accent-fg transition-colors">
+                      {item.client_name || 'Anonymous Client'}
+                    </span>
+                    <span className="text-xs text-fg-3">{item.company_name || '—'}</span>
+                  </div>
+                </td>
+
+                {/* Answers column (Q1 / Q2 / Q3 badges) */}
+                <td className="py-3.5 px-4">
+                  <div className="flex flex-wrap items-center gap-1.5">{answerBadges}</div>
+                </td>
+
+                {/* Notes column */}
+                <td className="py-3.5 px-4 max-w-xs">
+                  <div className="flex items-center gap-2 min-w-0">
+                    {voiceCount > 0 && (
+                      <span
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent/10 text-accent-fg tabular text-xs font-semibold shrink-0"
+                        title={`${voiceCount} voice note(s)`}
+                      >
+                        <Mic className="w-3 h-3" />
+                        {voiceCount}
+                      </span>
+                    )}
+                    <span
+                      className="text-xs text-fg-3 truncate"
+                      title={firstMsg || undefined}
+                    >
+                      {truncatedPreview || (voiceCount > 0 ? 'Voice note' : '—')}
+                    </span>
+                  </div>
+                </td>
+
+                {/* Received column */}
+                <td className="py-3.5 px-4">
+                  <span title={formatAbsolute(item.created_at)} className="text-xs text-fg-3 tabular">
+                    {formatRelative(item.created_at)}
+                  </span>
+                </td>
+
+                {/* Details button column */}
+                <td className="py-3.5 px-4 text-right" onClick={(e) => e.stopPropagation()}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onSelect(item)}
+                    icon={<ChevronRight className="w-4 h-4" />}
+                    aria-label="View details"
+                  >
+                    Details
+                  </Button>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

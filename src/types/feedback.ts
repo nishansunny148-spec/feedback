@@ -8,7 +8,19 @@ export const STATUS_LABEL: Record<FeedbackStatus, string> = {
   done: 'Done',
 };
 
-export type Satisfaction = 'excellent' | 'satisfactory' | 'wants_improvements';
+export type Choice = 'excellent' | 'satisfactory' | 'wants_improvements';
+export type Satisfaction = Choice;
+
+export interface Answer {
+  id?: string;
+  feedback_id?: string;
+  question_no: number;
+  choice: Choice;
+  message?: string;
+  audio_path?: string;
+  audio_mime?: string;
+  audio_duration_sec?: number;
+}
 
 export interface Client {
   name: string;
@@ -22,34 +34,28 @@ export interface Feedback {
   client_name: string | null;
   /** Null on rows submitted before the company field existed. */
   company_name: string | null;
-  /** Null on rows submitted before Question 1 existed. */
-  satisfaction: Satisfaction | null;
-  /** Null on rows submitted before Question 2 existed. */
-  satisfaction_q2: Satisfaction | null;
+  /** Null on rows submitted before multi-question existed. */
+  satisfaction?: Choice | null;
+  satisfaction_q2?: Choice | null;
   project: string | null;
   /** Legacy 1–5 rating, only present on old rows. */
   rating?: number | null;
-  message: string | null;
-  liked: string | null;
-  changes_needed: string | null;
-  audio_path: string | null;
-  audio_mime: string | null;
-  audio_duration_sec: number | null;
+  message?: string | null;
+  liked?: string | null;
+  changes_needed?: string | null;
+  audio_path?: string | null;
+  audio_mime?: string | null;
+  audio_duration_sec?: number | null;
   status: FeedbackStatus;
+  feedback_answers?: Answer[];
 }
 
 export interface SubmitFeedbackInput {
   client_token?: string;
   client_name: string;
   companyName: string;
-  satisfaction: Satisfaction;
   project?: string;
-  /** Legacy, no longer collected by the form. */
-  rating?: number;
-  message?: string;
-  audio_path?: string;
-  audio_mime?: string;
-  audio_duration_sec?: number;
+  answers: Answer[];
   consent: true;
 }
 
@@ -59,7 +65,7 @@ export type SortDirection = 'asc' | 'desc';
 export interface ListFeedbackParams {
   status?: FeedbackStatus;
   satisfaction?: Satisfaction;
-  satisfactionQ2?: Satisfaction;
+  needsWork?: boolean;
   search?: string;
   rating?: number;
   clientName?: string;
@@ -81,14 +87,17 @@ export interface FeedbackStats {
   new: number;
   in_progress: number;
   done: number;
-  satisfaction: Record<Satisfaction, number>;
+  satisfaction: Record<Choice, number>;
+  totalAnswers: number;
+  excellentAnswers: number;
+  excellentPercentage: number;
 }
 
 /** Admin inbox filters, mirrored in the URL query string. */
 export interface FeedbackFilters {
   status?: FeedbackStatus;
   satisfaction?: Satisfaction;
-  satisfactionQ2?: Satisfaction;
+  needsWork?: boolean;
   search: string;
   rating?: number;
   clientName?: string;
@@ -137,3 +146,4 @@ export class AppError extends Error {
     if (cause !== undefined) (this as { cause?: unknown }).cause = cause;
   }
 }
+

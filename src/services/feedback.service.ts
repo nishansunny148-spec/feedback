@@ -1,6 +1,8 @@
 import { getSupabase } from '../lib/supabase';
-import { isSatisfaction } from '../lib/constants';
+import { isChoice } from '../lib/constants';
 import type {
+  Answer,
+  Choice,
   Feedback,
   FeedbackStats,
   FeedbackStatus,
@@ -11,24 +13,34 @@ import type {
 import { appError, toAppError } from './errors';
 import { removeVoiceNote } from './storage.service';
 
-const str = (v: unknown): string | null => (typeof v === 'string' && v.length > 0 ? v : null);
+const str = (v: unknown): string | null => (typeof v === 'string' && v.trim().length > 0 ? v.trim() : null);
 const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null);
-
-/** Columns read by the inbox list and detail drawer. */
-const FEEDBACK_COLUMNS =
-  'id, created_at, client_id, client_name, company_name, satisfaction, satisfaction_q2, project, rating, message, liked, changes_needed, audio_path, audio_mime, audio_duration_sec, status';
 
 /** Defensive row parser so the UI never sees malformed data. */
 export function parseFeedback(row: Record<string, unknown>): Feedback {
   const status: FeedbackStatus = row.status === 'in_progress' || row.status === 'done' ? row.status : 'new';
+  const rawAnswers = Array.isArray(row.feedback_answers) ? row.feedback_answers : [];
+  const feedback_answers: Answer[] = rawAnswers
+    .map((a: Record<string, unknown>) => ({
+      id: str(a.id) ?? undefined,
+      feedback_id: str(a.feedback_id) ?? undefined,
+      question_no: Number(a.question_no ?? 0),
+      choice: isChoice(a.choice) ? a.choice : ('excellent' as Choice),
+      message: str(a.message) ?? undefined,
+      audio_path: str(a.audio_path) ?? undefined,
+      audio_mime: str(a.audio_mime) ?? undefined,
+      audio_duration_sec: num(a.audio_duration_sec) ?? undefined,
+    }))
+    .sort((a, b) => a.question_no - b.question_no);
+
   return {
     id: String(row.id ?? ''),
     created_at: str(row.created_at) ?? new Date().toISOString(),
     client_id: str(row.client_id),
     client_name: str(row.client_name),
     company_name: str(row.company_name),
-    satisfaction: isSatisfaction(row.satisfaction) ? row.satisfaction : null,
-    satisfaction_q2: isSatisfaction(row.satisfaction_q2) ? row.satisfaction_q2 : null,
+    satisfaction: isChoice(row.satisfaction) ? row.satisfaction : null,
+    satisfaction_q2: isChoice(row.satisfaction_q2) ? row.satisfaction_q2 : null,
     project: str(row.project),
     rating: num(row.rating),
     message: str(row.message),
@@ -38,6 +50,7 @@ export function parseFeedback(row: Record<string, unknown>): Feedback {
     audio_mime: str(row.audio_mime),
     audio_duration_sec: num(row.audio_duration_sec),
     status,
+    feedback_answers,
   };
 }
 
@@ -45,37 +58,59 @@ function rowsOf(data: unknown): Feedback[] {
   return Array.isArray(data) ? data.map((r) => parseFeedback(r as Record<string, unknown>)) : [];
 }
 
-const blankToNull = (v?: string) => {
+const blankToUndefined = (v?: string | null) => {
   const t = v?.trim();
-  return t ? t : null;
+  return t ? t : undefined;
 };
 
 export async function submitFeedback(input: SubmitFeedbackInput): Promise<void> {
   if (input.consent !== true) throw appError('validation');
-  const clientName = blankToNull(input.client_name);
-  const companyName = blankToNull(input.companyName);
-  if (!clientName || !companyName || !isSatisfaction(input.satisfaction)) {
+  const clientName = blankToUndefined(input.client_name);
+  const companyName = blankToUndefined(input.companyName);
+  if (!clientName || !companyName || !Array.isArray(input.answers) || input.answers.length === 0) {
     throw appError('validation');
   }
 
-  const rawMime = input.audio_mime ? input.audio_mime.split(';')[0].trim() : null;
+  // Ensure each answer has required fields
+  const cleanAnswers = input.answers.map((a) => {
+    const item: {
+      question_no: number;
+      choice: Choice;
+      message?: string;
+      audio_path?: string;
+      audio_mime?: string;
+      audio_duration_sec?: number;
+    } = {
+      question_no: Number(a.question_no),
+      choice: a.choice,
+    };
+    const msg = blankToUndefined(a.message);
+    if (msg) item.message = msg;
 
-  const payload = {
+    const path = blankToUndefined(a.audio_path);
+    if (path) item.audio_path = path;
+
+    const mimeRaw = blankToUndefined(a.audio_mime);
+    if (mimeRaw) item.audio_mime = mimeRaw.split(';')[0].trim();
+
+    if (typeof a.audio_duration_sec === 'number' && Number.isFinite(a.audio_duration_sec)) {
+      item.audio_duration_sec = Math.max(0, Math.min(600, Math.round(a.audio_duration_sec)));
+    }
+    return item;
+  });
+
+  const payload: Record<string, unknown> = {
     p_client_name: clientName,
     p_company_name: companyName,
-    p_satisfaction: input.satisfaction,
-    p_client_token: blankToNull(input.client_token),
-    p_project: blankToNull(input.project),
-    p_rating: null,
-    p_message: blankToNull(input.message),
-    p_audio_path: blankToNull(input.audio_path),
-    p_audio_mime: rawMime,
-    p_audio_duration_sec:
-      typeof input.audio_duration_sec === 'number'
-        ? Math.max(0, Math.min(600, Math.round(input.audio_duration_sec)))
-        : null,
+    p_answers: cleanAnswers,
     p_consent: true,
   };
+
+  const token = blankToUndefined(input.client_token);
+  if (token) payload.p_client_token = token;
+
+  const project = blankToUndefined(input.project);
+  if (project) payload.p_project = project;
 
   const { error } = await getSupabase().rpc('submit_feedback', payload);
   if (error) throw toAppError(error);
@@ -87,17 +122,17 @@ function sanitizeSearch(term: string): string {
 }
 
 export async function listFeedback(params: ListFeedbackParams): Promise<ListFeedbackResult> {
-  const { status, satisfaction, satisfactionQ2, search, rating, clientName, from, to, sort = 'created_at', dir = 'desc', limit, offset } =
+  const { status, satisfaction, needsWork, search, rating, clientName, from, to, sort = 'created_at', dir = 'desc', limit, offset } =
     params;
 
-  let query = getSupabase().from('feedback').select(FEEDBACK_COLUMNS, { count: 'exact' });
+  let query = getSupabase().from('feedback').select('*, feedback_answers(*)').order('created_at', { ascending: false });
   if (status) query = query.eq('status', status);
   if (satisfaction) query = query.eq('satisfaction', satisfaction);
-  if (satisfactionQ2) query = query.eq('satisfaction_q2', satisfactionQ2);
   if (rating) query = query.eq('rating', rating);
   if (clientName) query = query.eq('client_name', clientName);
   if (from) query = query.gte('created_at', from);
   if (to) query = query.lte('created_at', to);
+
   const term = search ? sanitizeSearch(search) : '';
   if (term) {
     query = query.or(
@@ -105,44 +140,114 @@ export async function listFeedback(params: ListFeedbackParams): Promise<ListFeed
     );
   }
 
-  query = query.order(sort, { ascending: dir === 'asc', nullsFirst: false });
-  if (sort !== 'created_at') query = query.order('created_at', { ascending: false });
-  query = query.order('id', { ascending: true }).range(offset, offset + limit - 1);
-
-  const { data, error, count } = await query;
+  const { data, error } = await query;
   if (error) throw toAppError(error);
-  return { rows: rowsOf(data), total: count ?? 0 };
+
+  let rows = rowsOf(data);
+
+  // Client-side filtering for search term matching inside feedback_answers message
+  if (term) {
+    const lowerTerm = term.toLowerCase();
+    rows = rows.filter((r) => {
+      const matchHeader =
+        r.client_name?.toLowerCase().includes(lowerTerm) ||
+        r.company_name?.toLowerCase().includes(lowerTerm) ||
+        r.message?.toLowerCase().includes(lowerTerm);
+      if (matchHeader) return true;
+      return r.feedback_answers?.some((a) => a.message?.toLowerCase().includes(lowerTerm));
+    });
+  }
+
+  // Client-side filtering for needsWork (any answer is wants_improvements)
+  if (needsWork) {
+    rows = rows.filter((r) => {
+      if (r.feedback_answers && r.feedback_answers.length > 0) {
+        return r.feedback_answers.some((a) => a.choice === 'wants_improvements');
+      }
+      return r.satisfaction === 'wants_improvements' || r.satisfaction_q2 === 'wants_improvements';
+    });
+  }
+
+  // Sort & Paginate
+  if (sort === 'rating') {
+    rows.sort((a, b) => {
+      const rA = a.rating ?? 0;
+      const rB = b.rating ?? 0;
+      return dir === 'asc' ? rA - rB : rB - rA;
+    });
+  }
+
+  const total = rows.length;
+  const pagedRows = rows.slice(offset, offset + limit);
+
+  return { rows: pagedRows, total };
 }
 
-/** Lightweight aggregate for the stats bar (two narrow columns only). */
+/** Aggregate stats for stats bar. */
 export async function getFeedbackStats(): Promise<FeedbackStats> {
-  const { data, error } = await getSupabase().from('feedback').select('status, satisfaction');
+  const { data, error } = await getSupabase().from('feedback').select('status, satisfaction, satisfaction_q2, feedback_answers(choice)');
   if (error) throw toAppError(error);
+
   const stats: FeedbackStats = {
     total: 0,
     new: 0,
     in_progress: 0,
     done: 0,
     satisfaction: { excellent: 0, satisfactory: 0, wants_improvements: 0 },
+    totalAnswers: 0,
+    excellentAnswers: 0,
+    excellentPercentage: 0,
   };
+
   const rows: unknown = data;
   if (Array.isArray(rows)) {
     for (const raw of rows) {
-      const row = raw as { status?: unknown; satisfaction?: unknown };
+      const row = raw as {
+        status?: unknown;
+        satisfaction?: unknown;
+        satisfaction_q2?: unknown;
+        feedback_answers?: Array<{ choice?: unknown }>;
+      };
       stats.total += 1;
       if (row.status === 'in_progress') stats.in_progress += 1;
       else if (row.status === 'done') stats.done += 1;
       else stats.new += 1;
-      if (isSatisfaction(row.satisfaction)) stats.satisfaction[row.satisfaction] += 1;
+
+      if (Array.isArray(row.feedback_answers) && row.feedback_answers.length > 0) {
+        for (const ans of row.feedback_answers) {
+          if (isChoice(ans.choice)) {
+            stats.totalAnswers += 1;
+            stats.satisfaction[ans.choice] += 1;
+            if (ans.choice === 'excellent') {
+              stats.excellentAnswers += 1;
+            }
+          }
+        }
+      } else {
+        // Fallback for legacy rows
+        if (isChoice(row.satisfaction)) {
+          stats.totalAnswers += 1;
+          stats.satisfaction[row.satisfaction] += 1;
+          if (row.satisfaction === 'excellent') stats.excellentAnswers += 1;
+        }
+        if (isChoice(row.satisfaction_q2)) {
+          stats.totalAnswers += 1;
+          stats.satisfaction[row.satisfaction_q2] += 1;
+          if (row.satisfaction_q2 === 'excellent') stats.excellentAnswers += 1;
+        }
+      }
     }
   }
+
+  stats.excellentPercentage =
+    stats.totalAnswers > 0 ? Math.round((stats.excellentAnswers / stats.totalAnswers) * 100) : 0;
+
   return stats;
 }
 
 export async function updateStatus(id: string, status: FeedbackStatus): Promise<void> {
   const { data, error } = await getSupabase().from('feedback').update({ status }).eq('id', id).select('id');
   if (error) throw toAppError(error);
-  // RLS silently filters rows; zero affected rows means no permission or gone.
   if (!Array.isArray(data) || data.length === 0) throw appError('permission');
 }
 
@@ -179,3 +284,4 @@ export function subscribeToFeedback(handlers: {
     void supabase.removeChannel(channel);
   };
 }
+

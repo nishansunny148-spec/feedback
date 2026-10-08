@@ -1,176 +1,276 @@
-import { zodResolver } from '@hookform/resolvers/zod';
 import { motion } from 'framer-motion';
 import { Send, UploadCloud } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
-import { Controller, useForm, type FieldErrors } from 'react-hook-form';
 import { toast } from 'sonner';
-import { z } from 'zod';
-import type { UseVoiceRecorderResult } from '../../hooks/useVoiceRecorder';
-import { COMPANY_NAME_MAX, QUESTION_1_LABEL, QUESTION_2_LABEL, SATISFACTION_VALUES } from '../../lib/constants';
+import { COMPANY_NAME_MAX, QUESTIONS } from '../../lib/constants';
 import { detectInAppBrowser } from '../../lib/env-detect';
 import { submitFeedback } from '../../services/feedback.service';
 import { uploadVoiceNote } from '../../services/storage.service';
-import type { Client } from '../../types/feedback';
+import type { Answer, Choice, Client } from '../../types/feedback';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { ConsentCheck } from './ConsentCheck';
 import { InAppBrowserNotice } from './InAppBrowserNotice';
-import { SatisfactionPicker } from './SatisfactionPicker';
+import { QuestionCard } from './QuestionCard';
 import { SuccessScreen } from './SuccessScreen';
-import { TellUsMoreBox } from './TellUsMoreBox';
-
-const formSchema = z.object({
-  clientName: z.string().trim().min(2, 'Please enter your name.'),
-  companyName: z
-    .string()
-    .trim()
-    .min(1, 'Please enter your company name.')
-    .max(COMPANY_NAME_MAX, `Max ${COMPANY_NAME_MAX} characters`),
-  satisfaction: z.enum(SATISFACTION_VALUES, { errorMap: () => ({ message: 'Please choose an option for Question 1.' }) }),
-  satisfactionQ2: z.enum(SATISFACTION_VALUES).optional(),
-  message: z.string().max(2000, 'Max 2000 characters').optional(),
-  consent: z.literal(true, { errorMap: () => ({ message: 'You must agree to proceed.' }) }),
-});
-
-export type FeedbackFormValues = z.infer<typeof formSchema>;
-
-/** Top-to-bottom order of required fields, used to scroll to the first error. */
-const REQUIRED_FIELD_ORDER = ['clientName', 'companyName', 'satisfaction', 'consent'] as const;
-
-const fieldId = (name: (typeof REQUIRED_FIELD_ORDER)[number]) => `field-${name}`;
+import { useVoiceRecorder, type UseVoiceRecorderResult } from '../../hooks/useVoiceRecorder';
 
 export interface FeedbackFormProps {
   clientToken?: string | null;
   client?: Client | null;
-  recorder: UseVoiceRecorderResult;
+  /** Legacy single recorder prop preserved for backwards compatibility if needed */
+  recorder?: UseVoiceRecorderResult;
 }
 
-export const FeedbackForm: React.FC<FeedbackFormProps> = ({ clientToken, client, recorder }) => {
+interface UploadedAudio {
+  path: string;
+  mime: string;
+  durationSec?: number;
+}
+
+/** Component rendering a single QuestionCard with its own isolated useVoiceRecorder hook instance. */
+const QuestionCardItem: React.FC<{
+  questionNo: number;
+  questionLabel: string;
+  choice: Choice | undefined;
+  onChoiceChange: (val: Choice) => void;
+  message: string;
+  onMessageChange: (val: string) => void;
+  activeRecordingQuestionNo: number | null;
+  setActiveRecordingQuestionNo: React.Dispatch<React.SetStateAction<number | null>>;
+  onVoiceDataChange: (qNo: number, data: { blob: Blob | null; mimeType: string; extension: string; durationSeconds: number | null }) => void;
+  disabled: boolean;
+  choiceError?: string;
+  uploadError?: string;
+}> = ({
+  questionNo,
+  questionLabel,
+  choice,
+  onChoiceChange,
+  message,
+  onMessageChange,
+  activeRecordingQuestionNo,
+  setActiveRecordingQuestionNo,
+  onVoiceDataChange,
+  disabled,
+  choiceError,
+  uploadError,
+}) => {
+  const recorder = useVoiceRecorder();
+
+  // Sync recorder state up to parent
+  useEffect(() => {
+    onVoiceDataChange(questionNo, {
+      blob: recorder.blob,
+      mimeType: recorder.mimeType,
+      extension: recorder.extension,
+      durationSeconds: recorder.durationSeconds,
+    });
+  }, [questionNo, recorder.blob, recorder.mimeType, recorder.extension, recorder.durationSeconds, onVoiceDataChange]);
+
+  // Sync recording active state
+  useEffect(() => {
+    const isRecording = recorder.state === 'recording' || recorder.state === 'requesting';
+    if (isRecording) {
+      setActiveRecordingQuestionNo((current) => (current === questionNo ? current : questionNo));
+    } else {
+      setActiveRecordingQuestionNo((current) => (current === questionNo ? null : current));
+    }
+  }, [questionNo, recorder.state, setActiveRecordingQuestionNo]);
+
+  const isOtherQuestionRecording = activeRecordingQuestionNo !== null && activeRecordingQuestionNo !== questionNo;
+
+  return (
+    <QuestionCard
+      questionNo={questionNo}
+      questionLabel={questionLabel}
+      choice={choice}
+      onChoiceChange={onChoiceChange}
+      message={message}
+      onMessageChange={onMessageChange}
+      recorder={recorder}
+      isOtherQuestionRecording={isOtherQuestionRecording}
+      onStartRecording={() => setActiveRecordingQuestionNo(questionNo)}
+      disabled={disabled}
+      choiceError={choiceError}
+      uploadError={uploadError}
+    />
+  );
+};
+
+export const FeedbackForm: React.FC<FeedbackFormProps> = ({ clientToken, client }) => {
+  const [clientName, setClientName] = useState<string>('');
+  const [companyName, setCompanyName] = useState<string>(client?.name.slice(0, COMPANY_NAME_MAX) ?? '');
+  const [choices, setChoices] = useState<Record<number, Choice | undefined>>({});
+  const [messages, setMessages] = useState<Record<number, string>>({});
+  const [consent, setConsent] = useState<boolean>(true);
+
+  // Errors state
+  const [nameError, setNameError] = useState<string | undefined>(undefined);
+  const [companyError, setCompanyError] = useState<string | undefined>(undefined);
+  const [choiceErrors, setChoiceErrors] = useState<Record<number, string>>({});
+  const [consentError, setConsentError] = useState<string | undefined>(undefined);
+
+  // Voice recording state across questions
+  const [activeRecordingQuestionNo, setActiveRecordingQuestionNo] = useState<number | null>(null);
+  const [voiceData, setVoiceData] = useState<Record<number, { blob: Blob | null; mimeType: string; extension: string; durationSeconds: number | null }>>({});
+
+  // Upload & submission state
+  const [uploadedAudioMap, setUploadedAudioMap] = useState<Record<number, UploadedAudio>>({});
+  const [uploadErrors, setUploadErrors] = useState<Record<number, string>>({});
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [isSuccess, setIsSuccess] = useState<boolean>(false);
-  const [q2Error, setQ2Error] = useState<string | null>(null);
 
   const inAppBrowserName = detectInAppBrowser();
-
-  // Only send the token once it resolved to a real client; an invalid ?c= is ignored.
   const resolvedToken = client && clientToken ? clientToken : undefined;
 
-  const {
-    control,
-    register,
-    handleSubmit,
-    setValue,
-    getValues,
-    reset: resetForm,
-    formState: { errors },
-  } = useForm<FeedbackFormValues>({
-    resolver: zodResolver(formSchema),
-    shouldFocusError: false,
-    defaultValues: {
-      clientName: '',
-      companyName: client?.name.slice(0, COMPANY_NAME_MAX) ?? '',
-      satisfaction: undefined,
-      message: '',
-      consent: true,
-    },
-  });
-
-  // Prefill company from the share link (still editable). Never overwrite what the user typed.
+  // Prefill company name from share token if available
   useEffect(() => {
-    if (client?.name && !getValues('companyName')) {
-      setValue('companyName', client.name.slice(0, COMPANY_NAME_MAX));
+    if (client?.name && !companyName) {
+      setCompanyName(client.name.slice(0, COMPANY_NAME_MAX));
     }
-  }, [client?.name, getValues, setValue]);
+  }, [client?.name, companyName]);
 
-  const onInvalid = (formErrors: FieldErrors<FeedbackFormValues>) => {
-    const first = REQUIRED_FIELD_ORDER.find((name) => formErrors[name]);
-    if (!first) return;
-    const el = document.getElementById(fieldId(first));
-    if (!el) return;
-    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    const focusable = el instanceof HTMLInputElement ? el : el.querySelector<HTMLInputElement>('input');
-    focusable?.focus({ preventScroll: true });
-  };
+  const handleVoiceDataChange = React.useCallback(
+    (qNo: number, data: { blob: Blob | null; mimeType: string; extension: string; durationSeconds: number | null }) => {
+      setVoiceData((prev) => ({ ...prev, [qNo]: data }));
+      // Clear uploaded audio if user deleted or re-recorded
+      if (!data.blob) {
+        setUploadedAudioMap((prev) => {
+          if (!prev[qNo]) return prev;
+          const next = { ...prev };
+          delete next[qNo];
+          return next;
+        });
+        setUploadErrors((prev) => {
+          if (!prev[qNo]) return prev;
+          const next = { ...prev };
+          delete next[qNo];
+          return next;
+        });
+      }
+    },
+    [],
+  );
 
-  const onSubmit = async (data: FeedbackFormValues) => {
-    setQ2Error(null);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-    const hasMessage = Boolean(data.message?.trim());
-    const hasAudio = Boolean(recorder.blob);
+    // Reset errors
+    setNameError(undefined);
+    setCompanyError(undefined);
+    setChoiceErrors({});
+    setConsentError(undefined);
+    setUploadErrors({});
 
-    if (!hasMessage && !hasAudio) {
-      setQ2Error('Please enter a message or record a voice note for Question 2.');
-      const el = document.getElementById('field-q2');
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    let hasValidationError = false;
+    let firstErrorId: string | null = null;
+
+    if (!clientName.trim()) {
+      setNameError('Please enter your name.');
+      hasValidationError = true;
+      if (!firstErrorId) firstErrorId = 'field-clientName';
+    }
+
+    if (!companyName.trim()) {
+      setCompanyError('Please enter your company name.');
+      hasValidationError = true;
+      if (!firstErrorId) firstErrorId = 'field-companyName';
+    }
+
+    const newChoiceErrors: Record<number, string> = {};
+    for (const q of QUESTIONS) {
+      if (!choices[q.no]) {
+        newChoiceErrors[q.no] = `Please choose an option for Question ${q.no}.`;
+        hasValidationError = true;
+        if (!firstErrorId) firstErrorId = `field-q${q.no}-choice`;
+      }
+    }
+    setChoiceErrors(newChoiceErrors);
+
+    if (consent !== true) {
+      setConsentError('You must agree to proceed.');
+      hasValidationError = true;
+      if (!firstErrorId) firstErrorId = 'field-consent';
+    }
+
+    if (hasValidationError) {
+      if (firstErrorId) {
+        const el = document.getElementById(firstErrorId);
+        el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
       return;
     }
 
     setSubmitting(true);
-    setUploadProgress(null);
+    setUploadProgress(0.05);
 
-    let audioPath: string | undefined = undefined;
-    let audioMime: string | undefined = undefined;
+    // Upload voice notes in parallel for questions that have audio
+    const newUploadedMap = { ...uploadedAudioMap };
+    const questionsToUpload = QUESTIONS.filter((q) => voiceData[q.no]?.blob && !newUploadedMap[q.no]);
+    const newUploadErrors: Record<number, string> = {};
 
-    // Step 1: Upload voice note if present
-    if (recorder.blob) {
-      let attempts = 0;
-      const maxRetries = 3;
-      let uploadSuccess = false;
-
-      const rawMime = recorder.mimeType ? recorder.mimeType.split(';')[0] : 'audio/webm';
-
-      while (attempts <= maxRetries && !uploadSuccess) {
+    if (questionsToUpload.length > 0) {
+      const uploadPromises = questionsToUpload.map(async (q) => {
+        const data = voiceData[q.no]!;
+        const rawMime = data.mimeType ? data.mimeType.split(';')[0] : 'audio/webm';
         try {
-          recorder.setState('uploading');
-          setUploadProgress(0.05);
-
-          const res = await uploadVoiceNote(
-            recorder.blob,
-            recorder.extension,
-            rawMime,
-            (progress) => setUploadProgress(progress),
-          );
-
-          audioPath = res.path;
-          audioMime = res.mime.split(';')[0];
-          uploadSuccess = true;
+          const res = await uploadVoiceNote(data.blob!, data.extension, rawMime, (progress) => {
+            setUploadProgress(progress);
+          });
+          const cleanMime = res.mime.split(';')[0];
+          newUploadedMap[q.no] = {
+            path: res.path,
+            mime: cleanMime,
+            durationSec: data.durationSeconds ? Math.round(data.durationSeconds) : undefined,
+          };
         } catch (err: unknown) {
-          attempts += 1;
-          if (attempts <= maxRetries) {
-            const delay = Math.pow(2, attempts - 1) * 1000;
-            toast.error(`Upload failed. Retrying in ${delay / 1000}s… (Attempt ${attempts}/${maxRetries})`);
-            await new Promise((r) => setTimeout(r, delay));
-          } else {
-            recorder.setState('recorded');
-            setSubmitting(false);
-            setUploadProgress(null);
-            const msg = err instanceof Error ? err.message : 'Audio upload failed';
-            toast.error(`${msg}. Tap submit to try again.`);
-            return;
-          }
+          const msg = err instanceof Error ? err.message : 'Upload failed';
+          newUploadErrors[q.no] = `Voice note upload failed: ${msg}. Tap submit to retry.`;
         }
-      }
+      });
+
+      await Promise.all(uploadPromises);
     }
 
-    // Step 2: Submit feedback row
+    setUploadedAudioMap(newUploadedMap);
+
+    if (Object.keys(newUploadErrors).length > 0) {
+      setUploadErrors(newUploadErrors);
+      setSubmitting(false);
+      setUploadProgress(null);
+      const firstFailedNo = Object.keys(newUploadErrors)[0];
+      toast.error(`Question ${firstFailedNo} voice note upload failed. Tap submit to retry.`);
+      const el = document.getElementById(`question-card-${firstFailedNo}`);
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
+    // Call RPC after all uploads succeeded
     try {
+      const answers: Answer[] = QUESTIONS.map((q) => {
+        const audio = newUploadedMap[q.no];
+        return {
+          question_no: q.no,
+          choice: choices[q.no]!,
+          message: messages[q.no]?.trim() || undefined,
+          audio_path: audio?.path,
+          audio_mime: audio?.mime,
+          audio_duration_sec: audio?.durationSec,
+        };
+      });
+
       await submitFeedback({
         client_token: resolvedToken,
-        client_name: data.clientName.trim(),
-        companyName: data.companyName.trim(),
-        satisfaction: data.satisfaction,
+        client_name: clientName.trim(),
+        companyName: companyName.trim(),
         project: client?.project || undefined,
-        message: data.message?.trim() || undefined,
-        audio_path: audioPath,
-        audio_mime: audioMime,
-        audio_duration_sec: recorder.durationSeconds ? Math.round(recorder.durationSeconds) : undefined,
+        answers,
         consent: true,
       });
 
       setIsSuccess(true);
-      recorder.reset();
-      resetForm();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Submission failed';
       toast.error(msg);
@@ -182,8 +282,17 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ clientToken, client,
 
   const handleResetForm = () => {
     setIsSuccess(false);
-    recorder.reset();
-    resetForm();
+    setClientName('');
+    setCompanyName(client?.name.slice(0, COMPANY_NAME_MAX) ?? '');
+    setChoices({});
+    setMessages({});
+    setConsent(true);
+    setUploadedAudioMap({});
+    setUploadErrors({});
+    setNameError(undefined);
+    setCompanyError(undefined);
+    setChoiceErrors({});
+    setConsentError(undefined);
   };
 
   if (isSuccess) {
@@ -195,7 +304,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ clientToken, client,
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-      onSubmit={handleSubmit(onSubmit, onInvalid)}
+      onSubmit={handleSubmit}
       noValidate
       className="w-full flex flex-col gap-6"
     >
@@ -206,115 +315,101 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ clientToken, client,
         <p className="text-xs sm:text-sm text-fg-2">Share your thoughts and rate your experience with us.</p>
       </div>
 
-      {/* In-app browser notice if detected */}
+      {/* In-app browser notice */}
       {inAppBrowserName && <InAppBrowserNotice appName={inAppBrowserName} />}
 
       {/* 1. Name */}
       <Input
-        id={fieldId('clientName')}
+        id="field-clientName"
         label="Name *"
         placeholder="e.g. Alex Morgan"
         autoComplete="name"
+        value={clientName}
+        onChange={(e) => {
+          setClientName(e.target.value);
+          if (nameError) setNameError(undefined);
+        }}
         disabled={submitting}
-        error={errors.clientName?.message}
-        {...register('clientName')}
+        error={nameError}
       />
 
-      {/* 2. Company Name (prefilled from ?c= token, editable) */}
+      {/* 2. Company Name */}
       <Input
-        id={fieldId('companyName')}
+        id="field-companyName"
         label="Company Name *"
         placeholder="e.g. Acme Pvt. Ltd."
         autoComplete="organization"
         maxLength={COMPANY_NAME_MAX}
+        value={companyName}
+        onChange={(e) => {
+          setCompanyName(e.target.value);
+          if (companyError) setCompanyError(undefined);
+        }}
         disabled={submitting}
-        error={errors.companyName?.message}
-        {...register('companyName')}
+        error={companyError}
       />
 
-      {/* 3. Question 1 */}
-      <div id={fieldId('satisfaction')}>
-        <Controller
-          name="satisfaction"
-          control={control}
-          render={({ field }) => (
-            <SatisfactionPicker
-              name="satisfaction"
-              label={QUESTION_1_LABEL}
-              value={field.value}
-              onChange={field.onChange}
-              onBlur={field.onBlur}
-              disabled={submitting}
-              error={errors.satisfaction?.message}
-            />
-          )}
+      {/* 3. Question Cards (Q1, Q2, Q3, etc. dynamically rendered) */}
+      {QUESTIONS.map((q) => (
+        <QuestionCardItem
+          key={q.no}
+          questionNo={q.no}
+          questionLabel={q.label}
+          choice={choices[q.no]}
+          onChoiceChange={(val) => {
+            setChoices((prev) => ({ ...prev, [q.no]: val }));
+            setChoiceErrors((prev) => ({ ...prev, [q.no]: '' }));
+          }}
+          message={messages[q.no] || ''}
+          onMessageChange={(val) => setMessages((prev) => ({ ...prev, [q.no]: val }))}
+          activeRecordingQuestionNo={activeRecordingQuestionNo}
+          setActiveRecordingQuestionNo={setActiveRecordingQuestionNo}
+          onVoiceDataChange={handleVoiceDataChange}
+          disabled={submitting}
+          choiceError={choiceErrors[q.no]}
+          uploadError={uploadErrors[q.no]}
+        />
+      ))}
+
+      {/* Consent Checkbox */}
+      <div id="field-consent">
+        <ConsentCheck
+          checked={consent}
+          onChange={(checked) => {
+            setConsent(checked);
+            if (consentError) setConsentError(undefined);
+          }}
+          error={consentError}
         />
       </div>
 
-      {/* 4. Question 2 (Tell Us More box with typing + voice) */}
-      <div id="field-q2" className="w-full">
-        <Controller
-          name="message"
-          control={control}
-          render={({ field }) => (
-            <TellUsMoreBox
-              title="Question 2"
-              subLabel={QUESTION_2_LABEL}
-              value={field.value || ''}
-              onChange={(v) => {
-                field.onChange(v);
-                if (q2Error) setQ2Error(null);
-              }}
-              recorder={recorder}
-              disabled={submitting}
-              error={errors.message?.message || q2Error || undefined}
-            />
-          )}
-        />
-      </div>
-
-      {/* 6. Consent Checkbox */}
-      <div id={fieldId('consent')}>
-        <Controller
-          name="consent"
-          control={control}
-          render={({ field }) => (
-            <ConsentCheck
-              checked={field.value}
-              onChange={(checked) => setValue('consent', checked ? true : (false as unknown as true))}
-              error={errors.consent?.message}
-            />
-          )}
-        />
-      </div>
-
-      {/* Upload progress bar */}
+      {/* Upload progress & notice */}
       {uploadProgress !== null && (
-        <div className="w-full flex flex-col gap-1.5">
-          <div className="flex justify-between text-xs tabular text-fg-3">
-            <span className="flex items-center gap-1.5">
-              <UploadCloud className="w-3.5 h-3.5 animate-bounce text-accent-fg" />
-              Uploading voice note…
+        <div className="w-full flex flex-col gap-1.5 p-3.5 bg-accent/10 border border-accent/20 rounded-card">
+          <div className="flex justify-between text-xs tabular font-medium text-fg">
+            <span className="flex items-center gap-1.5 text-accent-fg">
+              <UploadCloud className="w-4 h-4 animate-bounce shrink-0" />
+              <span>Uploading voice notes… Please do not close or leave this page.</span>
             </span>
-            <span>{Math.round(uploadProgress * 100)}%</span>
+            <span className="shrink-0">{Math.round(uploadProgress * 100)}%</span>
           </div>
           <div className="w-full h-1.5 bg-raised rounded-full overflow-hidden">
             <div
               className="h-full bg-accent transition-all duration-200"
-              style={{ width: `${uploadProgress * 100}%` }}
+              style={{ width: `${Math.max(5, uploadProgress * 100)}%` }}
             />
           </div>
         </div>
       )}
 
-      {/* Submit Action Block */}
-      <div className="flex flex-col gap-2 mt-3 pt-2 border-t border-line/10">
+      {/* Submit Action */}
+      <div className="flex flex-col gap-2 mt-2 pt-2 border-t border-line/10">
         <Button
           type="submit"
           variant="primary"
           size="lg"
           loading={submitting}
-          disabled={submitting || recorder.state === 'recording'}
+          disabled={submitting || activeRecordingQuestionNo !== null}
           icon={
             <Send className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
           }

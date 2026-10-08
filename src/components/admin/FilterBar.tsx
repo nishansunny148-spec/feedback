@@ -31,7 +31,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filters, onChange, clients
     onChange({
       status: undefined,
       satisfaction: undefined,
-      satisfactionQ2: undefined,
+      needsWork: undefined,
       search: '',
       rating: undefined,
       clientName: undefined,
@@ -45,7 +45,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filters, onChange, clients
   const hasActiveFilters = Boolean(
     filters.status ||
       filters.satisfaction ||
-      filters.satisfactionQ2 ||
+      filters.needsWork ||
       filters.search ||
       filters.rating ||
       filters.clientName ||
@@ -93,7 +93,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filters, onChange, clients
         </div>
       </div>
 
-      {/* Primary Filter Pills (Status, Q1, Q2) */}
+      {/* Primary Filter Pills (Status, Needs Work, Satisfaction) */}
       <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-line/10 text-xs">
         {/* Status filter pills */}
         <div className="flex items-center gap-1 border-r border-line/10 pr-3">
@@ -125,9 +125,29 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filters, onChange, clients
           ))}
         </div>
 
+        {/* Needs Work Filter Pill */}
+        <div className="flex items-center gap-1 border-r border-line/10 pr-3">
+          <button
+            type="button"
+            onClick={() =>
+              onChange({
+                ...filters,
+                needsWork: filters.needsWork ? undefined : true,
+              })
+            }
+            className={`px-2.5 py-1 text-xs rounded-full transition-colors font-bold whitespace-nowrap ${
+              filters.needsWork
+                ? 'bg-danger text-white'
+                : 'bg-card text-fg-2 hover:text-fg hover:bg-danger/10'
+            }`}
+          >
+            Needs work
+          </button>
+        </div>
+
         {/* Satisfaction filter pills */}
         <div className="flex items-center gap-1">
-          <span className="text-[10px] text-fg-3 font-semibold uppercase pr-1">Satisfaction:</span>
+          <span className="text-[10px] text-fg-3 font-semibold uppercase pr-1">Choice:</span>
           <button
             type="button"
             onClick={() => onChange({ ...filters, satisfaction: undefined })}

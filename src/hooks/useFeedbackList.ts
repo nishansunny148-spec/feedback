@@ -49,6 +49,7 @@ export function useFeedbackList(filters: FeedbackFilters): UseFeedbackListResult
         const res = await listFeedback({
           status: filters.status,
           satisfaction: filters.satisfaction,
+          needsWork: filters.needsWork,
           search: filters.search,
           rating: filters.rating,
           clientName: filters.clientName,
@@ -77,7 +78,7 @@ export function useFeedbackList(filters: FeedbackFilters): UseFeedbackListResult
         setLoading(false);
       }
     },
-    [filters.status, filters.satisfaction, filters.search, filters.rating, filters.clientName, filters.from, filters.to, filters.sort, filters.dir],
+    [filters.status, filters.satisfaction, filters.needsWork, filters.search, filters.rating, filters.clientName, filters.from, filters.to, filters.sort, filters.dir],
   );
 
   // Reset page and refetch when filters change

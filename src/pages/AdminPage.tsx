@@ -26,6 +26,7 @@ export const AdminPage: React.FC = () => {
   const initialFilters: FeedbackFilters = {
     status: (searchParams.get('status') as FeedbackStatus) || undefined,
     satisfaction: (searchParams.get('satisfaction') as Satisfaction) || undefined,
+    needsWork: searchParams.get('needsWork') === 'true' || undefined,
     search: searchParams.get('search') || '',
     rating: searchParams.get('rating') ? Number(searchParams.get('rating')) : undefined,
     clientName: searchParams.get('client') || undefined,
@@ -74,6 +75,7 @@ export const AdminPage: React.FC = () => {
     const params = new URLSearchParams();
     if (newFilters.status) params.set('status', newFilters.status);
     if (newFilters.satisfaction) params.set('satisfaction', newFilters.satisfaction);
+    if (newFilters.needsWork) params.set('needsWork', 'true');
     if (newFilters.search) params.set('search', newFilters.search);
     if (newFilters.rating) params.set('rating', String(newFilters.rating));
     if (newFilters.clientName) params.set('client', newFilters.clientName);
