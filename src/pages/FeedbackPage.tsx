@@ -14,7 +14,7 @@ export const FeedbackPage: React.FC = () => {
     <div className="min-h-screen flex flex-col items-center justify-between p-4 sm:p-8 pt-safe pb-safe px-safe">
       <div className="w-full max-w-form my-auto flex flex-col gap-6">
         <header className="flex justify-center pt-2">
-          <BrandLogo className="w-[120px] sm:w-[150px]" />
+          <BrandLogo className="w-[100px] sm:w-[100px]" />
         </header>
 
         {clientLoading ? (
