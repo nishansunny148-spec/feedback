@@ -31,6 +31,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filters, onChange, clients
     onChange({
       status: undefined,
       satisfaction: undefined,
+      satisfactionQ2: undefined,
       search: '',
       rating: undefined,
       clientName: undefined,
@@ -44,6 +45,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filters, onChange, clients
   const hasActiveFilters = Boolean(
     filters.status ||
       filters.satisfaction ||
+      filters.satisfactionQ2 ||
       filters.search ||
       filters.rating ||
       filters.clientName ||
@@ -66,63 +68,8 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filters, onChange, clients
           />
         </div>
 
-        {/* Filter pills and controls */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-          {/* Status filter pills */}
-          <div className="flex items-center gap-1 border-r border-line/10 pr-2 mr-1">
-            <button
-              type="button"
-              onClick={() => onChange({ ...filters, status: undefined })}
-              className={`px-2.5 py-1 text-xs rounded-full transition-colors ${
-                filters.status === undefined
-                  ? 'bg-fg text-bg font-bold'
-                  : 'bg-card text-fg-2 hover:text-fg'
-              }`}
-            >
-              All Status
-            </button>
-            {(['new', 'in_progress', 'done'] as FeedbackStatus[]).map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => onChange({ ...filters, status: s })}
-                className={`px-2.5 py-1 text-xs rounded-full transition-colors whitespace-nowrap ${
-                  filters.status === s
-                    ? 'bg-fg text-bg font-bold'
-                    : 'bg-card text-fg-2 hover:text-fg'
-                }`}
-              >
-                {s.replace('_', ' ')}
-              </button>
-            ))}
-          </div>
-
-          {/* Satisfaction filter pills */}
-          <div className="flex items-center gap-1">
-            {SATISFACTION_OPTIONS.map((opt) => {
-              const active = filters.satisfaction === opt.value;
-              return (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() =>
-                    onChange({
-                      ...filters,
-                      satisfaction: active ? undefined : opt.value,
-                    })
-                  }
-                  className={`px-2.5 py-1 text-xs rounded-full transition-colors whitespace-nowrap ${
-                    active
-                      ? 'bg-accent text-accent-ink font-bold'
-                      : 'bg-card text-fg-2 hover:text-fg'
-                  }`}
-                >
-                  {opt.short}
-                </button>
-              );
-            })}
-          </div>
-
+        {/* Filter controls */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
           <Button
             variant="ghost"
             size="sm"
@@ -143,6 +90,77 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filters, onChange, clients
               Reset
             </Button>
           )}
+        </div>
+      </div>
+
+      {/* Primary Filter Pills (Status, Q1, Q2) */}
+      <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-line/10 text-xs">
+        {/* Status filter pills */}
+        <div className="flex items-center gap-1 border-r border-line/10 pr-3">
+          <span className="text-[10px] text-fg-3 font-semibold uppercase pr-1">Status:</span>
+          <button
+            type="button"
+            onClick={() => onChange({ ...filters, status: undefined })}
+            className={`px-2.5 py-1 text-xs rounded-full transition-colors ${
+              filters.status === undefined
+                ? 'bg-fg text-bg font-bold'
+                : 'bg-card text-fg-2 hover:text-fg'
+            }`}
+          >
+            All
+          </button>
+          {(['new', 'in_progress', 'done'] as FeedbackStatus[]).map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => onChange({ ...filters, status: s })}
+              className={`px-2.5 py-1 text-xs rounded-full transition-colors whitespace-nowrap ${
+                filters.status === s
+                  ? 'bg-fg text-bg font-bold'
+                  : 'bg-card text-fg-2 hover:text-fg'
+              }`}
+            >
+              {s.replace('_', ' ')}
+            </button>
+          ))}
+        </div>
+
+        {/* Satisfaction filter pills */}
+        <div className="flex items-center gap-1">
+          <span className="text-[10px] text-fg-3 font-semibold uppercase pr-1">Satisfaction:</span>
+          <button
+            type="button"
+            onClick={() => onChange({ ...filters, satisfaction: undefined })}
+            className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
+              filters.satisfaction === undefined
+                ? 'bg-fg text-bg font-bold'
+                : 'bg-card text-fg-2 hover:text-fg'
+            }`}
+          >
+            All
+          </button>
+          {SATISFACTION_OPTIONS.map((opt) => {
+            const active = filters.satisfaction === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() =>
+                  onChange({
+                    ...filters,
+                    satisfaction: active ? undefined : opt.value,
+                  })
+                }
+                className={`px-2 py-0.5 text-xs rounded-full transition-colors whitespace-nowrap ${
+                  active
+                    ? 'bg-accent text-accent-ink font-bold'
+                    : 'bg-card text-fg-2 hover:text-fg'
+                }`}
+              >
+                {opt.short}
+              </button>
+            );
+          })}
         </div>
       </div>
 

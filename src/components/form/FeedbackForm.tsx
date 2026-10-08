@@ -1,25 +1,23 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion } from 'framer-motion';
-import { AlertCircle, Send, UploadCloud } from 'lucide-react';
-import React, { useEffect, useRef, useState } from 'react';
+import { Send, UploadCloud } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 import { Controller, useForm, type FieldErrors } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import type { UseVoiceRecorderResult } from '../../hooks/useVoiceRecorder';
-import { COMPANY_NAME_MAX, SATISFACTION_VALUES } from '../../lib/constants';
-import { detectInAppBrowser, hasRecordingSupport } from '../../lib/env-detect';
+import { COMPANY_NAME_MAX, QUESTION_1_LABEL, QUESTION_2_LABEL, SATISFACTION_VALUES } from '../../lib/constants';
+import { detectInAppBrowser } from '../../lib/env-detect';
 import { submitFeedback } from '../../services/feedback.service';
 import { uploadVoiceNote } from '../../services/storage.service';
 import type { Client } from '../../types/feedback';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
-import { Textarea } from '../ui/Textarea';
 import { ConsentCheck } from './ConsentCheck';
-import { FileFallback } from './FileFallback';
 import { InAppBrowserNotice } from './InAppBrowserNotice';
 import { SatisfactionPicker } from './SatisfactionPicker';
 import { SuccessScreen } from './SuccessScreen';
-import { VoiceRecorder } from './VoiceRecorder';
+import { TellUsMoreBox } from './TellUsMoreBox';
 
 const formSchema = z.object({
   clientName: z.string().trim().min(2, 'Please enter your name.'),
@@ -28,9 +26,9 @@ const formSchema = z.object({
     .trim()
     .min(1, 'Please enter your company name.')
     .max(COMPANY_NAME_MAX, `Max ${COMPANY_NAME_MAX} characters`),
-  satisfaction: z.enum(SATISFACTION_VALUES, { errorMap: () => ({ message: 'Please choose one option.' }) }),
-  liked: z.string().max(1000, 'Max 1000 characters').optional(),
-  changesNeeded: z.string().max(1000, 'Max 1000 characters').optional(),
+  satisfaction: z.enum(SATISFACTION_VALUES, { errorMap: () => ({ message: 'Please choose an option for Question 1.' }) }),
+  satisfactionQ2: z.enum(SATISFACTION_VALUES).optional(),
+  message: z.string().max(2000, 'Max 2000 characters').optional(),
   consent: z.literal(true, { errorMap: () => ({ message: 'You must agree to proceed.' }) }),
 });
 
@@ -51,9 +49,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ clientToken, client,
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [isSuccess, setIsSuccess] = useState<boolean>(false);
-  const [emptySubmissionError, setEmptySubmissionError] = useState<string | null>(null);
-  const [showFileFallback, setShowFileFallback] = useState<boolean>(!hasRecordingSupport());
-  const voiceSectionRef = useRef<HTMLDivElement>(null);
+  const [q2Error, setQ2Error] = useState<string | null>(null);
 
   const inAppBrowserName = detectInAppBrowser();
 
@@ -75,8 +71,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ clientToken, client,
       clientName: '',
       companyName: client?.name.slice(0, COMPANY_NAME_MAX) ?? '',
       satisfaction: undefined,
-      liked: '',
-      changesNeeded: '',
+      message: '',
       consent: true,
     },
   });
@@ -99,15 +94,15 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ clientToken, client,
   };
 
   const onSubmit = async (data: FeedbackFormValues) => {
-    setEmptySubmissionError(null);
+    setQ2Error(null);
 
-    // Validation rule: submission needs EITHER a voice note OR at least one text answer
+    const hasMessage = Boolean(data.message?.trim());
     const hasAudio = Boolean(recorder.blob);
-    const hasText = Boolean(data.liked?.trim() || data.changesNeeded?.trim());
 
-    if (!hasAudio && !hasText) {
-      setEmptySubmissionError('Please record a voice note or answer at least one of the questions below.');
-      voiceSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (!hasMessage && !hasAudio) {
+      setQ2Error('Please enter a message or record a voice note for Question 2.');
+      const el = document.getElementById('field-q2');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
 
@@ -123,6 +118,8 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ clientToken, client,
       const maxRetries = 3;
       let uploadSuccess = false;
 
+      const rawMime = recorder.mimeType ? recorder.mimeType.split(';')[0] : 'audio/webm';
+
       while (attempts <= maxRetries && !uploadSuccess) {
         try {
           recorder.setState('uploading');
@@ -131,12 +128,12 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ clientToken, client,
           const res = await uploadVoiceNote(
             recorder.blob,
             recorder.extension,
-            recorder.mimeType,
+            rawMime,
             (progress) => setUploadProgress(progress),
           );
 
           audioPath = res.path;
-          audioMime = res.mime;
+          audioMime = res.mime.split(';')[0];
           uploadSuccess = true;
         } catch (err: unknown) {
           attempts += 1;
@@ -164,8 +161,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ clientToken, client,
         companyName: data.companyName.trim(),
         satisfaction: data.satisfaction,
         project: client?.project || undefined,
-        liked: data.liked?.trim() || undefined,
-        changes_needed: data.changesNeeded?.trim() || undefined,
+        message: data.message?.trim() || undefined,
         audio_path: audioPath,
         audio_mime: audioMime,
         audio_duration_sec: recorder.durationSeconds ? Math.round(recorder.durationSeconds) : undefined,
@@ -206,8 +202,8 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ clientToken, client,
       {/* Header */}
       <div className="flex flex-col gap-1 text-center">
         {client?.project && <span className="eyebrow">{client.project}</span>}
-        <h1 className="text-2xl sm:text-3xl tracking-tight text-fg">Client Feedback Form</h1>
-        <p className="text-xs sm:text-sm text-fg-2">Record a voice note or type your thoughts below.</p>
+        <h1 className="text-2xl sm:text-3xl tracking-tight text-fg font-bold">Client Feedback Form</h1>
+        <p className="text-xs sm:text-sm text-fg-2">Share your thoughts and rate your experience with us.</p>
       </div>
 
       {/* In-app browser notice if detected */}
@@ -243,6 +239,8 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ clientToken, client,
           control={control}
           render={({ field }) => (
             <SatisfactionPicker
+              name="satisfaction"
+              label={QUESTION_1_LABEL}
               value={field.value}
               onChange={field.onChange}
               onBlur={field.onBlur}
@@ -253,51 +251,25 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ clientToken, client,
         />
       </div>
 
-      {/* 4. Voice Recorder or File Fallback */}
-      <div ref={voiceSectionRef} className="flex flex-col gap-2">
-        <label className="text-xs text-fg-2">Voice Note</label>
-        {showFileFallback ? (
-          <FileFallback
-            onFileSelect={(file) => void recorder.setRecordedBlob(file)}
-            onError={(msg) => toast.error(msg)}
-            disabled={submitting}
-          />
-        ) : (
-          <VoiceRecorder
-            recorder={recorder}
-            onFileFallbackNeeded={() => setShowFileFallback(true)}
-          />
-        )}
-      </div>
-
-      {/* Empty Submission Error Banner */}
-      {emptySubmissionError && (
-        <div className="p-3 bg-warning/15 border border-warning/30 rounded-control flex items-center gap-2 text-xs text-warning">
-          <AlertCircle className="w-4 h-4 shrink-0" />
-          <span>{emptySubmissionError}</span>
-        </div>
-      )}
-
-      {/* 5. Text questions (optional) */}
-      <div className="flex flex-col gap-5 p-5 bg-raised/50 border border-line/10 rounded-card">
-        {/* What did you like? */}
-        <Textarea
-          label="What did you like?"
-          placeholder="Share what worked well or what stood out…"
-          maxLength={1000}
-          disabled={submitting}
-          error={errors.liked?.message}
-          {...register('liked')}
-        />
-
-        {/* What needs to change? */}
-        <Textarea
-          label="What needs to change?"
-          placeholder="Share any edits, fixes, or adjustments needed…"
-          maxLength={1000}
-          disabled={submitting}
-          error={errors.changesNeeded?.message}
-          {...register('changesNeeded')}
+      {/* 4. Question 2 (Tell Us More box with typing + voice) */}
+      <div id="field-q2" className="w-full">
+        <Controller
+          name="message"
+          control={control}
+          render={({ field }) => (
+            <TellUsMoreBox
+              title="Question 2"
+              subLabel={QUESTION_2_LABEL}
+              value={field.value || ''}
+              onChange={(v) => {
+                field.onChange(v);
+                if (q2Error) setQ2Error(null);
+              }}
+              recorder={recorder}
+              disabled={submitting}
+              error={errors.message?.message || q2Error || undefined}
+            />
+          )}
         />
       </div>
 

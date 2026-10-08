@@ -1,4 +1,4 @@
-import { Mic, MessageSquare } from 'lucide-react';
+import { Mic } from 'lucide-react';
 import React from 'react';
 import { formatClock, formatRelative } from '../../lib/format';
 import type { Feedback, FeedbackStatus } from '../../types/feedback';
@@ -13,6 +13,8 @@ export interface FeedbackCardProps {
 }
 
 export const FeedbackCard: React.FC<FeedbackCardProps> = ({ item, onClick, onStatusChange }) => {
+  const previewText = item.message || item.liked || item.changes_needed;
+
   return (
     <Card
       variant="glass"
@@ -21,10 +23,10 @@ export const FeedbackCard: React.FC<FeedbackCardProps> = ({ item, onClick, onSta
     >
       <div className="flex items-start justify-between gap-2">
         <div>
-          <h4 className="text-sm text-fg">
+          <h4 className="text-sm font-bold text-fg">
             {item.client_name || 'Anonymous Client'}
           </h4>
-          {item.company_name && <p className="text-xs text-fg-3">{item.company_name}</p>}
+          <p className="text-xs text-fg-3">{item.company_name || '—'}</p>
         </div>
 
         <div onClick={(e) => e.stopPropagation()}>
@@ -32,17 +34,13 @@ export const FeedbackCard: React.FC<FeedbackCardProps> = ({ item, onClick, onSta
         </div>
       </div>
 
-      <div className="flex items-center gap-3 text-xs text-fg-2">
+      <div className="flex flex-wrap items-center gap-2 text-xs">
         <SatisfactionBadge satisfaction={item.satisfaction} rating={item.rating} />
 
-        {item.audio_path ? (
-          <span className="flex items-center gap-1 text-fg-2 tabular">
-            <Mic className="w-3.5 h-3.5 text-accent-fg" />
+        {item.audio_path && (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent/10 text-accent-fg tabular text-xs font-medium ml-auto">
+            <Mic className="w-3 h-3" />
             {formatClock(item.audio_duration_sec)}
-          </span>
-        ) : (
-          <span className="flex items-center gap-1 text-fg-3">
-            <MessageSquare className="w-3.5 h-3.5" /> Text note
           </span>
         )}
 
@@ -51,9 +49,9 @@ export const FeedbackCard: React.FC<FeedbackCardProps> = ({ item, onClick, onSta
         </span>
       </div>
 
-      {(item.liked || item.changes_needed) && (
+      {previewText && (
         <p className="text-xs text-fg-2 line-clamp-2 bg-raised/50 p-2.5 rounded-control border border-line/5">
-          {item.liked || item.changes_needed}
+          {previewText}
         </p>
       )}
     </Card>

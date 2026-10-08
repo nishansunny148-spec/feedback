@@ -12,6 +12,8 @@ export const COMPANY_NAME_MAX = 120;
 
 /** Replace with the real question text when it is final. */
 export const QUESTION_1_LABEL = 'Question 1';
+export const QUESTION_2_LABEL =
+  'પ્રોજેક્ટ શરૂ કરતા પહેલાં અમારી ટીમ તમારી બ્રાન્ડ, વ્યવસાયિક જરૂરિયાતો અને અપેક્ષાઓને કેટલી સારી રીતે સમજે છે?';
 
 /** Allowed values, in display order. Must match the CHECK in the submit_feedback RPC. */
 export const SATISFACTION_VALUES = ['excellent', 'satisfactory', 'wants_improvements'] as const satisfies readonly Satisfaction[];

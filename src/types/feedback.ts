@@ -24,9 +24,12 @@ export interface Feedback {
   company_name: string | null;
   /** Null on rows submitted before Question 1 existed. */
   satisfaction: Satisfaction | null;
+  /** Null on rows submitted before Question 2 existed. */
+  satisfaction_q2: Satisfaction | null;
   project: string | null;
   /** Legacy 1–5 rating, only present on old rows. */
   rating?: number | null;
+  message: string | null;
   liked: string | null;
   changes_needed: string | null;
   audio_path: string | null;
@@ -43,8 +46,7 @@ export interface SubmitFeedbackInput {
   project?: string;
   /** Legacy, no longer collected by the form. */
   rating?: number;
-  liked?: string;
-  changes_needed?: string;
+  message?: string;
   audio_path?: string;
   audio_mime?: string;
   audio_duration_sec?: number;
@@ -57,6 +59,7 @@ export type SortDirection = 'asc' | 'desc';
 export interface ListFeedbackParams {
   status?: FeedbackStatus;
   satisfaction?: Satisfaction;
+  satisfactionQ2?: Satisfaction;
   search?: string;
   rating?: number;
   clientName?: string;
@@ -85,6 +88,7 @@ export interface FeedbackStats {
 export interface FeedbackFilters {
   status?: FeedbackStatus;
   satisfaction?: Satisfaction;
+  satisfactionQ2?: Satisfaction;
   search: string;
   rating?: number;
   clientName?: string;

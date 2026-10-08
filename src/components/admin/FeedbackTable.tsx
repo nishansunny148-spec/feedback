@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, Mic, MessageSquare } from 'lucide-react';
+import { ArrowDown, ArrowUp, Mic } from 'lucide-react';
 import React from 'react';
 import { formatClock, formatAbsolute, formatRelative } from '../../lib/format';
 import type { Feedback, FeedbackSort, FeedbackStatus, SortDirection } from '../../types/feedback';
@@ -42,10 +42,10 @@ export const FeedbackTable: React.FC<FeedbackTableProps> = ({
               Client
             </th>
             <th scope="col" className="py-3.5 px-4 font-normal">
-              Feedback
+              Question 1
             </th>
             <th scope="col" className="py-3.5 px-4 font-normal">
-              Voice Note
+              Question 2
             </th>
             <th scope="col" className="py-3.5 px-4 font-normal cursor-pointer select-none" onClick={() => toggleSort('created_at')}>
               <div className="flex items-center gap-1">
@@ -78,7 +78,7 @@ export const FeedbackTable: React.FC<FeedbackTableProps> = ({
                   <span className="font-bold text-fg group-hover:text-accent-fg transition-colors">
                     {item.client_name || 'Anonymous Client'}
                   </span>
-                  {item.company_name && <span className="text-xs text-fg-3">{item.company_name}</span>}
+                  <span className="text-xs text-fg-3">{item.company_name || '—'}</span>
                 </div>
               </td>
 
@@ -86,17 +86,21 @@ export const FeedbackTable: React.FC<FeedbackTableProps> = ({
                 <SatisfactionBadge satisfaction={item.satisfaction} rating={item.rating} />
               </td>
 
-              <td className="py-3.5 px-4">
-                {item.audio_path ? (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-accent/10 text-accent-fg tabular text-xs">
-                    <Mic className="w-3.5 h-3.5" />
-                    {formatClock(item.audio_duration_sec)}
+              <td className="py-3.5 px-4 max-w-xs">
+                <div className="flex items-center gap-2 min-w-0">
+                  {item.audio_path && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent/10 text-accent-fg tabular text-xs font-medium shrink-0">
+                      <Mic className="w-3 h-3" />
+                      {formatClock(item.audio_duration_sec)}
+                    </span>
+                  )}
+                  <span
+                    className="text-xs text-fg-2 truncate"
+                    title={item.message || item.liked || item.changes_needed || undefined}
+                  >
+                    {item.message || item.liked || item.changes_needed || (item.audio_path ? 'Voice note' : '—')}
                   </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 text-xs text-fg-3">
-                    <MessageSquare className="w-3.5 h-3.5" /> Text only
-                  </span>
-                )}
+                </div>
               </td>
 
               <td className="py-3.5 px-4">

@@ -16,7 +16,7 @@ const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFi
 
 /** Columns read by the inbox list and detail drawer. */
 const FEEDBACK_COLUMNS =
-  'id, created_at, client_id, client_name, company_name, satisfaction, project, rating, liked, changes_needed, audio_path, audio_mime, audio_duration_sec, status';
+  'id, created_at, client_id, client_name, company_name, satisfaction, satisfaction_q2, project, rating, message, liked, changes_needed, audio_path, audio_mime, audio_duration_sec, status';
 
 /** Defensive row parser so the UI never sees malformed data. */
 export function parseFeedback(row: Record<string, unknown>): Feedback {
@@ -28,8 +28,10 @@ export function parseFeedback(row: Record<string, unknown>): Feedback {
     client_name: str(row.client_name),
     company_name: str(row.company_name),
     satisfaction: isSatisfaction(row.satisfaction) ? row.satisfaction : null,
+    satisfaction_q2: isSatisfaction(row.satisfaction_q2) ? row.satisfaction_q2 : null,
     project: str(row.project),
     rating: num(row.rating),
+    message: str(row.message),
     liked: str(row.liked),
     changes_needed: str(row.changes_needed),
     audio_path: str(row.audio_path),
@@ -43,35 +45,37 @@ function rowsOf(data: unknown): Feedback[] {
   return Array.isArray(data) ? data.map((r) => parseFeedback(r as Record<string, unknown>)) : [];
 }
 
-const blankToUndefined = (v?: string) => {
+const blankToNull = (v?: string) => {
   const t = v?.trim();
-  return t ? t : undefined;
+  return t ? t : null;
 };
 
 export async function submitFeedback(input: SubmitFeedbackInput): Promise<void> {
   if (input.consent !== true) throw appError('validation');
-  const clientName = blankToUndefined(input.client_name);
-  const companyName = blankToUndefined(input.companyName);
-  if (!clientName || !companyName || !isSatisfaction(input.satisfaction)) throw appError('validation');
+  const clientName = blankToNull(input.client_name);
+  const companyName = blankToNull(input.companyName);
+  if (!clientName || !companyName || !isSatisfaction(input.satisfaction)) {
+    throw appError('validation');
+  }
+
+  const rawMime = input.audio_mime ? input.audio_mime.split(';')[0].trim() : null;
 
   const payload = {
     p_client_name: clientName,
     p_company_name: companyName,
     p_satisfaction: input.satisfaction,
-    p_client_token: blankToUndefined(input.client_token),
-    p_project: blankToUndefined(input.project),
-    p_rating: input.rating,
-    p_liked: blankToUndefined(input.liked),
-    p_changes_needed: blankToUndefined(input.changes_needed),
-    p_audio_path: blankToUndefined(input.audio_path),
-    p_audio_mime: blankToUndefined(input.audio_mime),
+    p_client_token: blankToNull(input.client_token),
+    p_project: blankToNull(input.project),
+    p_rating: null,
+    p_message: blankToNull(input.message),
+    p_audio_path: blankToNull(input.audio_path),
+    p_audio_mime: rawMime,
     p_audio_duration_sec:
       typeof input.audio_duration_sec === 'number'
         ? Math.max(0, Math.min(600, Math.round(input.audio_duration_sec)))
-        : undefined,
+        : null,
     p_consent: true,
   };
-  if (!payload.p_audio_path && !payload.p_liked && !payload.p_changes_needed) throw appError('empty_submission');
 
   const { error } = await getSupabase().rpc('submit_feedback', payload);
   if (error) throw toAppError(error);
@@ -83,12 +87,13 @@ function sanitizeSearch(term: string): string {
 }
 
 export async function listFeedback(params: ListFeedbackParams): Promise<ListFeedbackResult> {
-  const { status, satisfaction, search, rating, clientName, from, to, sort = 'created_at', dir = 'desc', limit, offset } =
+  const { status, satisfaction, satisfactionQ2, search, rating, clientName, from, to, sort = 'created_at', dir = 'desc', limit, offset } =
     params;
 
   let query = getSupabase().from('feedback').select(FEEDBACK_COLUMNS, { count: 'exact' });
   if (status) query = query.eq('status', status);
   if (satisfaction) query = query.eq('satisfaction', satisfaction);
+  if (satisfactionQ2) query = query.eq('satisfaction_q2', satisfactionQ2);
   if (rating) query = query.eq('rating', rating);
   if (clientName) query = query.eq('client_name', clientName);
   if (from) query = query.gte('created_at', from);
@@ -96,7 +101,7 @@ export async function listFeedback(params: ListFeedbackParams): Promise<ListFeed
   const term = search ? sanitizeSearch(search) : '';
   if (term) {
     query = query.or(
-      `client_name.ilike.*${term}*,company_name.ilike.*${term}*,liked.ilike.*${term}*,changes_needed.ilike.*${term}*`,
+      `client_name.ilike.*${term}*,company_name.ilike.*${term}*,message.ilike.*${term}*,liked.ilike.*${term}*,changes_needed.ilike.*${term}*`,
     );
   }
 

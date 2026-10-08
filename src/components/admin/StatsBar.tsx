@@ -43,7 +43,7 @@ export const StatsBar: React.FC<StatsBarProps> = ({ stats, loading }) => {
       ))}
 
       <Card variant="raised" className="col-span-2 sm:col-span-1 p-4 flex flex-col gap-1">
-        <span className="eyebrow">{SATISFACTION_OPTIONS.map((o) => o.short).join(' / ')}</span>
+        <span className="eyebrow">Q1: Excellent / Satisfactory / Needs work</span>
         <div className="flex items-baseline gap-1.5 text-2xl font-bold tracking-tight tabular">
           {SATISFACTION_OPTIONS.map((o, i) => (
             <React.Fragment key={o.value}>
