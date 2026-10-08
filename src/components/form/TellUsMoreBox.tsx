@@ -2,6 +2,7 @@ import { AlertCircle, Mic, Pause, Play, Square, Trash2, X } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import type { UseVoiceRecorderResult } from '../../hooks/useVoiceRecorder';
 import { claimPlayback, releasePlayback } from '../../lib/audio';
+import { cn } from '../../lib/cn';
 import { detectInAppBrowser, hasRecordingSupport } from '../../lib/env-detect';
 import { formatClock } from '../../lib/format';
 import { Waveform } from './Waveform';
@@ -274,9 +275,14 @@ export const TellUsMoreBox: React.FC<TellUsMoreBoxProps> = ({
                 onClick={handleMicTap}
                 disabled={disabled}
                 aria-label="Record a voice note"
-                className="absolute bottom-0 right-0 w-10 h-10 rounded-full bg-accent text-accent-ink hover:brightness-110 shadow-md shadow-accent/20 flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 focus-ring shrink-0"
+                className={cn(
+                  'absolute bottom-0 right-0 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 shrink-0 focus-ring shadow-md',
+                  disabled
+                    ? 'bg-white/60 text-black/40 border-2 border-black/30 cursor-not-allowed opacity-60'
+                    : 'bg-white text-black border-2 border-black hover:bg-neutral-100 shadow-black/10 hover:scale-105 active:scale-95',
+                )}
               >
-                <Mic className="w-5 h-5" />
+                <Mic className="w-5 h-5 text-black" />
               </button>
             )}
           </div>

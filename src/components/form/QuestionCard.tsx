@@ -162,16 +162,16 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
         </p>
       </div>
 
-      {/* b) 3-option picker without colored dots, stacked vertically under 480px */}
+      {/* b) 3-option picker without colored dots, horizontal in mobile view */}
       <fieldset className="w-full flex flex-col gap-1.5" id={`field-q${questionNo}-choice`}>
-        <div className="grid grid-cols-1 min-[480px]:grid-cols-3 gap-2.5 w-full">
+        <div className="grid grid-cols-3 gap-1.5 sm:gap-2.5 w-full">
           {SATISFACTION_OPTIONS.map((opt) => {
             const selected = choice === opt.value;
             return (
               <label
                 key={opt.value}
                 className={cn(
-                  'relative flex items-center gap-3 min-h-[52px] w-full px-4 py-2.5 rounded-control cursor-pointer select-none transition-all duration-200',
+                  'relative flex flex-col sm:flex-row items-center sm:items-center justify-center sm:justify-start text-center sm:text-left gap-1.5 sm:gap-3 min-h-[60px] sm:min-h-[52px] w-full px-1.5 py-2 sm:px-4 sm:py-2.5 rounded-control cursor-pointer select-none transition-all duration-200',
                   'has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring has-[:focus-visible]:ring-offset-2 has-[:focus-visible]:ring-offset-bg',
                   selected
                     ? 'bg-accent/10 border border-accent shadow-sm'
@@ -192,20 +192,20 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                 <span
                   aria-hidden="true"
                   className={cn(
-                    'shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors',
+                    'shrink-0 w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 flex items-center justify-center transition-colors',
                     selected ? 'border-accent-fg' : 'border-line/30',
                   )}
                 >
                   <span
                     className={cn(
-                      'w-2.5 h-2.5 rounded-full transition-transform duration-200',
+                      'w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full transition-transform duration-200',
                       selected ? 'scale-100 bg-accent-fg' : 'scale-0',
                     )}
                   />
                 </span>
                 <span className="flex flex-col min-w-0">
-                  <span className="text-sm font-bold text-fg leading-tight whitespace-normal">{opt.en}</span>
-                  <span lang="gu" className="text-xs text-fg-2">
+                  <span className="text-xs sm:text-sm font-bold text-fg leading-tight whitespace-normal">{opt.en}</span>
+                  <span lang="gu" className="text-[10px] sm:text-xs text-fg-2 leading-tight">
                     {opt.gu}
                   </span>
                 </span>
@@ -235,7 +235,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
       <div className="flex flex-col gap-1.5 w-full mt-1">
         <div className="flex items-center justify-between">
           <span className="text-[11px] text-fg-3 uppercase tracking-wider font-semibold">Additional Comments</span>
-          <span className="text-[11px] text-fg-3">Typing or Voice Notes</span>
+          <span className="text-[11px] text-fg-3"></span>
         </div>
 
         <div className="relative w-full rounded-card border border-line/10 bg-raised p-3.5 focus-within:border-accent focus-within:ring-1 focus-within:ring-accent transition-all shadow-sm">
@@ -346,13 +346,13 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                   aria-label={`Record a voice note for Question ${questionNo}`}
                   title={isOtherQuestionRecording ? 'Another recording is in progress' : 'Record voice note'}
                   className={cn(
-                    'absolute bottom-0 right-0 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 shrink-0 focus-ring',
+                    'absolute bottom-0 right-0 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 shrink-0 focus-ring shadow-md',
                     disabled || isOtherQuestionRecording
-                      ? 'bg-raised text-fg-3 cursor-not-allowed opacity-50 border border-line/10'
-                      : 'bg-accent text-accent-ink hover:brightness-110 shadow-md shadow-accent/20 hover:scale-105 active:scale-95',
+                      ? 'bg-white/60 text-black/40 border-2 border-black/30 cursor-not-allowed opacity-60'
+                      : 'bg-white text-black border-2 border-black hover:bg-neutral-100 shadow-black/10 hover:scale-105 active:scale-95',
                   )}
                 >
-                  <Mic className="w-5 h-5" />
+                  <Mic className="w-5 h-5 text-black" />
                 </button>
               )}
             </div>
