@@ -53,12 +53,12 @@ export const SatisfactionPicker: React.FC<SatisfactionPickerProps> = ({
                 'has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring has-[:focus-visible]:ring-offset-2 has-[:focus-visible]:ring-offset-bg',
                 variant === 'card'
                   ? selected
-                    ? 'bg-accent/10 border border-accent shadow-sm'
-                    : 'bg-raised border border-line/10 hover:border-line/30 hover:bg-card'
+                    ? 'bg-white border-2 border-[#0A0A0A] shadow-[0_2px_8px_rgba(0,0,0,0.18)]'
+                    : 'bg-white border border-[#CFCFCF] hover:border-[#9A9A9A]'
                   : selected
-                    ? 'bg-accent/15 text-fg'
-                    : 'hover:bg-raised/50 text-fg-2 hover:text-fg',
-                error && !selected && (variant === 'card' ? 'border-danger/60' : 'text-danger'),
+                    ? 'bg-black/5 text-[#0A0A0A]'
+                    : 'hover:bg-black/5 text-[#3F3F3F] hover:text-[#0A0A0A]',
+                error && !selected && (variant === 'card' ? 'border-[#C62828]' : 'text-[#C62828]'),
                 disabled && 'opacity-50 cursor-not-allowed',
               )}
             >
@@ -76,13 +76,13 @@ export const SatisfactionPicker: React.FC<SatisfactionPickerProps> = ({
                 aria-hidden="true"
                 className={cn(
                   'shrink-0 w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 flex items-center justify-center transition-colors',
-                  selected ? 'border-accent-fg' : 'border-line/30',
+                  selected ? 'border-[#0A0A0A]' : 'border-[#0A0A0A]',
                 )}
               >
                 <span
                   className={cn(
                     'w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full transition-transform duration-200',
-                    selected ? 'scale-100 bg-accent-fg' : 'scale-0',
+                    selected ? 'scale-100 bg-[#0A0A0A]' : 'scale-0',
                   )}
                 />
               </span>

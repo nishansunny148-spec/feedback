@@ -68,7 +68,7 @@ export const Waveform: React.FC<WaveformProps> = ({
           ? (color === '#0A0A0A' ? `rgba(10, 10, 10, ${0.4 + val * 0.6})` : color)
           : isDark
             ? `rgba(198, 255, 61, ${0.4 + val * 0.6})`
-            : `rgba(63, 104, 0, ${0.4 + val * 0.6})`;
+            : `rgba(10, 10, 10, ${0.4 + val * 0.6})`;
 
         ctx.fillStyle = fill;
         ctx.beginPath();

@@ -105,12 +105,12 @@
     --card-border: #D9D9D9;
     --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
     --input-bg: #FFFFFF;
-    --input-border: #0A0A0A;
+    --input-border: #CFCFCF;
     --input-focus-border: #0A0A0A;
-    --input-focus-glow: 0 0 0 3px rgba(198, 255, 61, 0.45);
+    --input-focus-glow: 0 2px 8px rgba(0, 0, 0, 0.15);
     --picker-bg: #FFFFFF;
     --picker-border: #CFCFCF;
-    --picker-selected-bg: #F3FFD0;
+    --picker-selected-bg: #FFFFFF;
     --picker-selected-border: #0A0A0A;
     --radio-ring: #0A0A0A;
     --radio-dot: #0A0A0A;
@@ -119,9 +119,9 @@
     --mic-fg: #FFFFFF;
     --chip-bg: #F1F1F1;
     --chip-border: #D9D9D9;
-    --submit-bg: #C6FF3D;
-    --submit-fg: #0A0A0A;
-    --submit-border: #0A0A0A;
+    --submit-bg: #000000;
+    --submit-fg: #FFFFFF;
+    --submit-border: #000000;
     --checkbox-accent: #0A0A0A;
     --control-border: 1px solid #CFCFCF;
 
@@ -134,12 +134,35 @@
     --fg-3: 63 63 63;
     --line: 217 217 217;
     --danger: 198 40 40;
+    --ring: 10 10 10;
+    --accent: 10 10 10;
+    --accent-fg: 10 10 10;
   }
 
   /* Hide atmosphere glow and grain on public light page */
   html.theme-light .atmo,
   .theme-light .atmo {
     display: none !important;
+  }
+
+  /* Text selection in light theme: light gray highlight, no green or neon */
+  .theme-light ::selection,
+  .theme-light *::selection,
+  .theme-light input::selection,
+  .theme-light textarea::selection,
+  html.theme-light ::selection,
+  html.theme-light *::selection {
+    background-color: #DCDCDC !important;
+    color: #0A0A0A !important;
+  }
+  .theme-light ::-moz-selection,
+  .theme-light *::-moz-selection,
+  .theme-light input::-moz-selection,
+  .theme-light textarea::-moz-selection,
+  html.theme-light ::-moz-selection,
+  html.theme-light *::-moz-selection {
+    background-color: #DCDCDC !important;
+    color: #0A0A0A !important;
   }
 
   .theme-light input,
@@ -149,17 +172,72 @@
     color-scheme: light !important;
   }
 
-  .theme-light .control-field {
+  /* Text boxes (Name, Company Name and Comments textarea) resting state & transition */
+  .theme-light .control-field,
+  .theme-light input[type='text'],
+  .theme-light textarea {
     background-color: #FFFFFF !important;
     border: var(--control-border, 1px solid #CFCFCF) !important;
+    caret-color: #0A0A0A !important;
+    transition: box-shadow 0.15s ease, border-color 0.15s ease !important;
   }
 
+  /* Text boxes focus state: black 1px border and soft black shadow, no lime */
   .theme-light .control-field:focus,
-  .theme-light .control-field:focus-within {
+  .theme-light .control-field:focus-within,
+  .theme-light .control-field:focus-visible,
+  .theme-light input[type='text']:focus,
+  .theme-light input[type='text']:focus-visible,
+  .theme-light textarea:focus,
+  .theme-light textarea:focus-visible {
     border-color: #0A0A0A !important;
     border-width: 1px !important;
-    box-shadow: 0 0 0 3px rgba(198, 255, 61, 0.45) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
     outline: none !important;
+    --tw-ring-color: transparent !important;
+    --tw-ring-offset-width: 0px !important;
+    --tw-ring-width: 0px !important;
+    --tw-ring-shadow: 0 0 #0000 !important;
+    --tw-ring-offset-shadow: 0 0 #0000 !important;
+  }
+
+  /* Comments textarea inside control-field: transparent, borderless child */
+  .theme-light .control-field textarea {
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+  .theme-light .control-field textarea:focus,
+  .theme-light .control-field textarea:focus-visible {
+    border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+  }
+
+  /* Picker option cards in light theme */
+  .theme-light .picker-option-card {
+    box-sizing: border-box !important;
+    background-color: #FFFFFF !important;
+    border: 1px solid #CFCFCF !important;
+    box-shadow: none !important;
+    padding: 12px 6px !important;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+  }
+
+  .theme-light .picker-option-card:hover:not([data-selected='true']):not([data-disabled='true']) {
+    border-color: #9A9A9A !important;
+  }
+
+  .theme-light .picker-option-card[data-selected='true'] {
+    background-color: #FFFFFF !important;
+    border: 2px solid #0A0A0A !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18) !important;
+    padding: 11px 5px !important;
+  }
+
+  .theme-light .picker-option-card:has(:focus-visible) {
+    outline: 2px solid #0A0A0A !important;
+    outline-offset: 2px !important;
   }
 
   .theme-light .submit-feedback-btn {
@@ -193,9 +271,9 @@
   .theme-light input:-webkit-autofill:focus,
   .theme-light textarea:-webkit-autofill,
   .theme-light select:-webkit-autofill {
-    -webkit-text-fill-color: #0a0a0a !important;
-    box-shadow: 0 0 0 1000px #ffffff inset !important;
-    caret-color: #0a0a0a !important;
+    -webkit-text-fill-color: #0A0A0A !important;
+    box-shadow: 0 0 0 1000px #FFFFFF inset !important;
+    caret-color: #0A0A0A !important;
   }
 
   /* Range scrubber slider in light theme */

@@ -461,8 +461,8 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ clientToken, client 
         }
         labelClassName="block text-[16px] font-normal text-[#0A0A0A] mb-[10px] text-left p-0 m-0"
         containerClassName="gap-0"
-        className="control-field h-[52px] rounded-[14px] bg-white text-[#0A0A0A] placeholder-[#6B6B6B] transition-all"
-        style={{ border: 'var(--control-border, 1px solid #CFCFCF)' }}
+        className="control-field h-[52px] rounded-[14px] bg-white text-[#0A0A0A] placeholder-[#6B6B6B] transition-all focus:!border-[#0A0A0A] focus:!shadow-[0_2px_8px_rgba(0,0,0,0.15)] focus:!outline-none focus:!ring-0 focus-visible:!ring-0 focus-visible:!ring-offset-0"
+        style={{ border: 'var(--control-border, 1px solid #CFCFCF)', caretColor: '#0A0A0A' }}
         autoComplete="name"
         value={clientName}
         onChange={(e) => {
@@ -483,8 +483,8 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ clientToken, client 
         }
         labelClassName="block text-[16px] font-normal text-[#0A0A0A] mb-[10px] text-left p-0 m-0"
         containerClassName="gap-0"
-        className="control-field h-[52px] rounded-[14px] bg-white text-[#0A0A0A] placeholder-[#6B6B6B] transition-all"
-        style={{ border: 'var(--control-border, 1px solid #CFCFCF)' }}
+        className="control-field h-[52px] rounded-[14px] bg-white text-[#0A0A0A] placeholder-[#6B6B6B] transition-all focus:!border-[#0A0A0A] focus:!shadow-[0_2px_8px_rgba(0,0,0,0.15)] focus:!outline-none focus:!ring-0 focus-visible:!ring-0 focus-visible:!ring-offset-0"
+        style={{ border: 'var(--control-border, 1px solid #CFCFCF)', caretColor: '#0A0A0A' }}
         autoComplete="organization"
         maxLength={COMPANY_NAME_MAX}
         value={companyName}

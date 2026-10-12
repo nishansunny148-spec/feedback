@@ -304,14 +304,19 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
             return (
               <label
                 key={opt.value}
+                data-selected={selected}
+                data-disabled={disabled}
                 style={{
-                  backgroundColor: selected ? '#F3FFD0' : '#FFFFFF',
+                  boxSizing: 'border-box',
+                  backgroundColor: '#FFFFFF',
                   border: selected ? '2px solid #0A0A0A' : '1px solid #CFCFCF',
+                  padding: selected ? '11px 5px' : '12px 6px',
+                  boxShadow: selected ? '0 2px 8px rgba(0, 0, 0, 0.18)' : 'none',
                 }}
                 className={cn(
-                  'relative flex flex-col items-center justify-start text-center py-3 px-1.5 rounded-[14px] cursor-pointer select-none transition-all duration-200 w-full min-w-0',
-                  'has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[#0A0A0A] has-[:focus-visible]:ring-offset-2 has-[:focus-visible]:ring-offset-white',
-                  selected ? 'shadow-sm' : 'hover:border-[#0A0A0A]/40',
+                  'picker-option-card relative flex flex-col items-center justify-start text-center rounded-[14px] cursor-pointer select-none transition-all duration-150 w-full min-w-0',
+                  'has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-[#0A0A0A] has-[:focus-visible]:outline-offset-2',
+                  !selected && 'hover:!border-[#9A9A9A]',
                   choiceError && !selected && '!border-[#C62828]',
                   disabled && 'opacity-50 cursor-not-allowed',
                 )}
@@ -497,6 +502,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                   resize: 'none',
                   padding: '10px 52px 10px 14px',
                   colorScheme: 'light',
+                  caretColor: '#0A0A0A',
                 }}
                 className="w-full bg-transparent border-0 text-sm text-[#0A0A0A] placeholder-[#6B6B6B] focus:outline-none focus:ring-0 overflow-y-auto"
               />

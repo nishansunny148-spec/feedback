@@ -25,7 +25,7 @@ export const SuccessScreen: React.FC<SuccessScreenProps> = ({ onReset, projectNa
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
         transition={{ delay: 0.1, type: 'spring', stiffness: 300, damping: 20 }}
-        className="w-20 h-20 rounded-full bg-[#C6FF3D] text-[#0A0A0A] border border-[#0A0A0A] flex items-center justify-center mb-6"
+        className="w-20 h-20 rounded-full bg-[#0A0A0A] text-white border border-[#0A0A0A] flex items-center justify-center mb-6"
       >
         <Check className="w-10 h-10 stroke-[2.5]" />
       </motion.div>
