@@ -8,8 +8,8 @@
       name="description"
       content="Sfumato client feedback form. Record a voice note or type your thoughts about your project."
     />
-    <meta name="color-scheme" content="dark" />
-    <meta name="theme-color" content="#0a0a0a" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#F8F5E9" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
     <meta property="og:type" content="website" />
@@ -33,7 +33,21 @@
     />
 
     <script>
-      document.documentElement.setAttribute('data-theme', 'dark');
+      (function () {
+        var isAdmin = window.location.pathname.startsWith('/admin');
+        var root = document.documentElement;
+        if (isAdmin) {
+          root.className = 'theme-dark';
+          root.setAttribute('data-theme', 'dark');
+          var metaTc = document.querySelector('meta[name="theme-color"]');
+          if (metaTc) metaTc.setAttribute('content', '#0a0a0a');
+        } else {
+          root.className = 'theme-light';
+          root.setAttribute('data-theme', 'light');
+          var metaTc = document.querySelector('meta[name="theme-color"]');
+          if (metaTc) metaTc.setAttribute('content', '#F8F5E9');
+        }
+      })();
     </script>
   </head>
   <body>

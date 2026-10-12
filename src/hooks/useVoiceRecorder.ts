@@ -41,6 +41,7 @@ export function useVoiceRecorder(): UseVoiceRecorderResult {
   const timerRef = useRef<number | null>(null);
   const startTimeRef = useRef<number>(0);
   const animFrameRef = useRef<number | null>(null);
+  const cancelledRef = useRef<boolean>(false);
 
   const maxSeconds = env().maxRecordingSeconds;
 
@@ -70,6 +71,7 @@ export function useVoiceRecorder(): UseVoiceRecorderResult {
   }, []);
 
   const reset = useCallback(() => {
+    cancelledRef.current = true;
     stopTimer();
     cleanupAudioNodes();
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
@@ -103,6 +105,7 @@ export function useVoiceRecorder(): UseVoiceRecorderResult {
 
   const start = useCallback(async () => {
     reset();
+    cancelledRef.current = false;
     setError(null);
     setState('requesting');
 
@@ -114,6 +117,11 @@ export function useVoiceRecorder(): UseVoiceRecorderResult {
           autoGainControl: true,
         },
       });
+
+      if (cancelledRef.current) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
       streamRef.current = stream;
 
       const selectedMime = pickRecorderMime();
@@ -154,6 +162,7 @@ export function useVoiceRecorder(): UseVoiceRecorderResult {
 
       chunksRef.current = [];
       recorder.ondataavailable = (e) => {
+        if (cancelledRef.current) return;
         if (e.data && e.data.size > 0) {
           chunksRef.current.push(e.data);
         }
@@ -161,8 +170,13 @@ export function useVoiceRecorder(): UseVoiceRecorderResult {
 
       recorder.onstop = async () => {
         stopTimer();
-        const durationSec = Math.max(0, (Date.now() - startTimeRef.current) / 1000);
         cleanupAudioNodes();
+        if (cancelledRef.current) {
+          chunksRef.current = [];
+          return;
+        }
+
+        const durationSec = Math.max(0, (Date.now() - startTimeRef.current) / 1000);
 
         if (durationSec < 1) {
           toast.error('Recording too short (under 1 second). Please try again.');
@@ -226,6 +240,7 @@ export function useVoiceRecorder(): UseVoiceRecorderResult {
   // Support file fallback blob
   const setRecordedBlob = useCallback(async (file: File | Blob, sourceMime?: string) => {
     reset();
+    cancelledRef.current = false;
     const type = sourceMime || file.type || 'audio/webm';
     const ext = extensionForMime(type);
     setMimeType(type);

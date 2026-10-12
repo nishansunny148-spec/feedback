@@ -14,16 +14,17 @@ export const ConsentCheck: React.FC<ConsentCheckProps> = ({ checked, onChange, e
           type="checkbox"
           checked={checked}
           onChange={(e) => onChange(e.target.checked)}
-          className="mt-0.5 w-4 h-4 rounded border-line/20 bg-raised text-accent focus:ring-accent focus:ring-offset-bg transition-colors"
+          style={{ accentColor: '#0A0A0A' }}
+          className="mt-0.5 w-4 h-4 rounded border-[#0A0A0A] bg-white text-[#0A0A0A] focus:ring-0 transition-colors"
           aria-invalid={Boolean(error)}
         />
-        <span className="text-xs text-fg-2 group-hover:text-fg transition-colors leading-relaxed">
+        <span className="text-xs text-[#0A0A0A] leading-relaxed">
           I agree my voice note will be stored and used only for this project.
         </span>
       </label>
 
       {error && (
-        <p className="text-xs text-danger font-medium ml-7" role="alert">
+        <p className="text-xs text-[#C62828] font-medium ml-7" role="alert">
           {error}
         </p>
       )}

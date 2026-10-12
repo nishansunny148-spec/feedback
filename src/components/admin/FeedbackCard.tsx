@@ -13,10 +13,10 @@ export interface FeedbackCardProps {
   onStatusChange: (newStatus: FeedbackStatus) => void;
 }
 
-const CHOICE_BADGE_STYLE: Record<Choice, string> = {
-  excellent: 'bg-success/15 text-success border-success/30',
-  satisfactory: 'bg-warning/15 text-warning border-warning/30',
-  wants_improvements: 'bg-danger/15 text-danger border-danger/30',
+const SQUARE_STYLE: Record<Choice, string> = {
+  excellent: 'bg-emerald-500 border-emerald-600',
+  satisfactory: 'bg-amber-500 border-amber-600',
+  wants_improvements: 'bg-red-500 border-red-600',
 };
 
 export const FeedbackCard: React.FC<FeedbackCardProps> = ({ item, onClick, onStatusChange }) => {
@@ -40,6 +40,14 @@ export const FeedbackCard: React.FC<FeedbackCardProps> = ({ item, onClick, onSta
     firstMsg = item.message?.trim() || item.liked?.trim() || item.changes_needed?.trim() || null;
   }
 
+  let answeredCount = 0;
+  if (hasAnswers) {
+    answeredCount = item.feedback_answers!.filter((a) => Boolean(a.choice)).length;
+  } else {
+    if (item.satisfaction) answeredCount++;
+    if (item.satisfaction_q2) answeredCount++;
+  }
+
   return (
     <Card
       variant="glass"
@@ -57,33 +65,51 @@ export const FeedbackCard: React.FC<FeedbackCardProps> = ({ item, onClick, onSta
         </div>
       </div>
 
-      {/* Badges per question */}
-      <div className="flex flex-wrap items-center gap-1.5 text-xs">
-        {QUESTIONS.map((q) => {
-          let choice: Choice | null = null;
-          if (hasAnswers) {
-            const found = item.feedback_answers!.find((a) => a.question_no === q.no);
-            if (found) choice = found.choice;
-          } else if (q.no === 1 && item.satisfaction) {
-            choice = item.satisfaction;
-          } else if (q.no === 2 && item.satisfaction_q2) {
-            choice = item.satisfaction_q2;
-          }
+      {/* Compact squares row per question */}
+      <div className="flex items-center gap-2 text-xs">
+        <div className="flex items-center gap-1" role="group" aria-label="Question ratings">
+          {QUESTIONS.map((q) => {
+            let choice: Choice | null = null;
+            if (hasAnswers) {
+              const found = item.feedback_answers!.find((a) => a.question_no === q.no);
+              if (found) choice = found.choice;
+            } else if (q.no === 1 && item.satisfaction) {
+              choice = item.satisfaction;
+            } else if (q.no === 2 && item.satisfaction_q2) {
+              choice = item.satisfaction_q2;
+            }
 
-          if (!choice) return null;
-          const opt = getSatisfactionOption(choice);
-          return (
-            <span
-              key={q.no}
-              className={`inline-flex items-center px-2 py-0.5 text-[10px] font-bold rounded-full border whitespace-nowrap ${CHOICE_BADGE_STYLE[choice]}`}
-            >
-              Q{q.no}: {opt.short}
-            </span>
-          );
-        })}
+            if (choice) {
+              const opt = getSatisfactionOption(choice);
+              const label = `Q${q.no}: ${opt.en}`;
+              return (
+                <span
+                  key={q.no}
+                  style={{ width: '14px', height: '14px' }}
+                  className={`inline-block rounded-[3px] border ${SQUARE_STYLE[choice]} shrink-0`}
+                  title={label}
+                  aria-label={label}
+                />
+              );
+            }
+
+            return (
+              <span
+                key={q.no}
+                style={{ width: '14px', height: '14px' }}
+                className="inline-block rounded-[3px] border border-fg-3/30 bg-transparent shrink-0"
+                title={`Q${q.no}: No answer`}
+                aria-label={`Q${q.no}: No answer`}
+              />
+            );
+          })}
+        </div>
+        <span className="text-xs text-fg-3 tabular font-medium">
+          {answeredCount}/{QUESTIONS.length}
+        </span>
 
         {voiceCount > 0 && (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent/10 text-accent-fg tabular text-[10px] font-bold ml-auto">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent/10 text-accent-fg tabular text-[10px] font-bold ml-1">
             <Mic className="w-3 h-3" />
             {voiceCount}
           </span>

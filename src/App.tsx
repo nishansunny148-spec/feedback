@@ -1,5 +1,5 @@
-import React, { Component, lazy, Suspense, type ReactNode } from 'react';
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import React, { Component, lazy, Suspense, useEffect, type ReactNode } from 'react';
+import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { Button } from './components/ui/Button';
 import { Card } from './components/ui/Card';
@@ -14,6 +14,43 @@ const AdminPage = lazy(() => import('./pages/AdminPage').then((m) => ({ default:
 
 // Initialise theme store early
 initTheme();
+
+const RouteThemeSync: React.FC = () => {
+  const location = useLocation();
+  const isAdmin = location.pathname.startsWith('/admin');
+
+  useEffect(() => {
+    const html = document.documentElement;
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
+    const metaColorScheme = document.querySelector('meta[name="color-scheme"]');
+
+    if (isAdmin) {
+      html.classList.remove('theme-light');
+      html.classList.add('theme-dark');
+      html.setAttribute('data-theme', 'dark');
+      html.style.colorScheme = 'dark';
+      html.style.backgroundColor = '#0a0a0a';
+      if (document.body) {
+        document.body.style.backgroundColor = '#0a0a0a';
+      }
+      if (metaTheme) metaTheme.setAttribute('content', '#0a0a0a');
+      if (metaColorScheme) metaColorScheme.setAttribute('content', 'dark');
+    } else {
+      html.classList.remove('theme-dark');
+      html.classList.add('theme-light');
+      html.setAttribute('data-theme', 'light');
+      html.style.colorScheme = 'light';
+      html.style.backgroundColor = '#F8F5E9';
+      if (document.body) {
+        document.body.style.backgroundColor = '#F8F5E9';
+      }
+      if (metaTheme) metaTheme.setAttribute('content', '#F8F5E9');
+      if (metaColorScheme) metaColorScheme.setAttribute('content', 'light');
+    }
+  }, [isAdmin]);
+
+  return null;
+};
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -125,6 +162,7 @@ export const App: React.FC = () => {
         }}
       />
       <BrowserRouter>
+        <RouteThemeSync />
         <Suspense
           fallback={
             <div className="min-h-screen flex items-center justify-center p-8 bg-bg">
@@ -135,8 +173,22 @@ export const App: React.FC = () => {
           <Routes>
             <Route path="/" element={<FeedbackPage />} />
             <Route path="/f" element={<FeedbackPage />} />
-            <Route path="/admin/login" element={<LoginPage />} />
-            <Route path="/admin" element={<AdminPage />} />
+            <Route
+              path="/admin/login"
+              element={
+                <div className="theme-dark min-h-screen">
+                  <LoginPage />
+                </div>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <div className="theme-dark min-h-screen">
+                  <AdminPage />
+                </div>
+              }
+            />
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </Suspense>

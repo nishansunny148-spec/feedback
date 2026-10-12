@@ -88,13 +88,14 @@ export async function submitFeedback(input: SubmitFeedbackInput): Promise<void> 
     if (msg) item.message = msg;
 
     const path = blankToUndefined(a.audio_path);
-    if (path) item.audio_path = path;
+    if (path) {
+      item.audio_path = path;
+      const mimeRaw = blankToUndefined(a.audio_mime);
+      if (mimeRaw) item.audio_mime = mimeRaw.split(';')[0].trim();
 
-    const mimeRaw = blankToUndefined(a.audio_mime);
-    if (mimeRaw) item.audio_mime = mimeRaw.split(';')[0].trim();
-
-    if (typeof a.audio_duration_sec === 'number' && Number.isFinite(a.audio_duration_sec)) {
-      item.audio_duration_sec = Math.max(0, Math.min(600, Math.round(a.audio_duration_sec)));
+      if (typeof a.audio_duration_sec === 'number' && Number.isFinite(a.audio_duration_sec)) {
+        item.audio_duration_sec = Math.max(0, Math.min(600, Math.round(a.audio_duration_sec)));
+      }
     }
     return item;
   });

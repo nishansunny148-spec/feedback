@@ -2,7 +2,7 @@ import React, { forwardRef } from 'react';
 import { cn } from '../../lib/cn';
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label?: string;
+  label?: React.ReactNode;
   labelClassName?: string;
   containerClassName?: string;
   error?: string;
@@ -12,7 +12,7 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ className, label, labelClassName, containerClassName, error, hint, icon, id, disabled, ...props }, ref) => {
-    const inputId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : undefined);
+    const inputId = id || (typeof label === 'string' ? label.toLowerCase().replace(/\s+/g, '-') : undefined);
     const errorId = error && inputId ? `${inputId}-error` : undefined;
     const hintId = hint && inputId ? `${inputId}-hint` : undefined;
     const describedBy = [errorId, hintId].filter(Boolean).join(' ') || undefined;

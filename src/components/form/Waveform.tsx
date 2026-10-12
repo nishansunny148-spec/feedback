@@ -7,6 +7,7 @@ export interface WaveformProps {
   className?: string;
   height?: number;
   barCount?: number;
+  color?: string;
 }
 
 export const Waveform: React.FC<WaveformProps> = ({
@@ -15,6 +16,7 @@ export const Waveform: React.FC<WaveformProps> = ({
   className = '',
   height = 48,
   barCount = 32,
+  color,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animRef = useRef<number | null>(null);
@@ -62,9 +64,13 @@ export const Waveform: React.FC<WaveformProps> = ({
         const y = centerY - barHeight / 2;
 
         const isDark = theme === 'dark';
-        const color = isDark ? `rgba(198, 255, 61, ${0.4 + val * 0.6})` : `rgba(63, 104, 0, ${0.4 + val * 0.6})`;
+        const fill = color
+          ? (color === '#0A0A0A' ? `rgba(10, 10, 10, ${0.4 + val * 0.6})` : color)
+          : isDark
+            ? `rgba(198, 255, 61, ${0.4 + val * 0.6})`
+            : `rgba(63, 104, 0, ${0.4 + val * 0.6})`;
 
-        ctx.fillStyle = color;
+        ctx.fillStyle = fill;
         ctx.beginPath();
         ctx.roundRect(x, y, barWidth, barHeight, 2);
         ctx.fill();

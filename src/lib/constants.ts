@@ -30,9 +30,45 @@ export const QUESTIONS: readonly QuestionDef[] = [
   },
   {
     no: 3,
-    en: 'How would you rate the quality, creativity, story telling, and visual impact of the videos and motion content created by our team?',
-    gu: 'અમારી ટીમ દ્વારા બનાવવામાં આવતા વીડિયો અને મોશન કન્ટેન્ટની ક્વોલિટી, ક્રિએટિવિટી, સ્ટોરી ટેલિંગ અને વિઝ્યુઅલ ઇમ્પેક્ટને તમે શું રેટિંગ કરશો?',
-    label: 'અમારી ટીમ દ્વારા બનાવવામાં આવતા વીડિયો અને મોશન કન્ટેન્ટની ક્વોલિટી, ક્રિએટિવિટી, સ્ટોરી ટેલિંગ અને વિઝ્યુઅલ ઇમ્પેક્ટને તમે શું રેટિંગ કરશો?',
+    en: 'How would you rate the quality, creativity, storytelling, and visual impact of the videos and motion content created by our team?',
+    gu: 'અમારી ટીમ દ્વારા બનાવવામાં આવતા વીડિયો અને મોશન કન્ટેન્ટની ક્વોલિટી, ક્રિએટિવિટી, સ્ટોરીટેલિંગ અને વિઝ્યુઅલ ઇમ્પેક્ટને તમે શું રેટિંગ કરશો?',
+    label: 'અમારી ટીમ દ્વારા બનાવવામાં આવતા વીડિયો અને મોશન કન્ટેન્ટની ક્વોલિટી, ક્રિએટિવિટી, સ્ટોરીટેલિંગ અને વિઝ્યુઅલ ઇમ્પેક્ટને તમે શું રેટિંગ કરશો?',
+  },
+  {
+    no: 4,
+    en: 'How would you rate the realism, detailing, creativity, and overall presentation of our 3D work?',
+    gu: 'અમારા 3D કામની રિયાલિટી, ડિટેલિંગ, ક્રિએટિવિટી અને ઓવરઓલ પ્રેઝન્ટેશનને તમે શું રેટિંગ આપશો?',
+    label: 'અમારા 3D કામની રિયાલિટી, ડિટેલિંગ, ક્રિએટિવિટી અને ઓવરઓલ પ્રેઝન્ટેશનને તમે શું રેટિંગ આપશો?',
+  },
+  {
+    no: 5,
+    en: "How would you rate our team's ability to understand your requirements and minimize unnecessary design or creative revisions?",
+    gu: 'તમારી જરૂરિયાતોને યોગ્ય રીતે સમજીને બિનજરૂરી ડિઝાઇન અથવા ક્રિએટિવ રિવિઝન ઘટાડવાની અમારી ટીમની ક્ષમતાને તમે શું રેટિંગ આપશો?',
+    label: 'તમારી જરૂરિયાતોને યોગ્ય રીતે સમજીને બિનજરૂરી ડિઝાઇન અથવા ક્રિએટિવ રિવિઝન ઘટાડવાની અમારી ટીમની ક્ષમતાને તમે શું રેટિંગ આપશો?',
+  },
+  {
+    no: 6,
+    en: "How would you rate our team's communication, coordination, responsiveness, and support throughout the project?",
+    gu: 'સમગ્ર પ્રોજેક્ટ દરમિયાન અમારી ટીમનું કમ્યુનિકેશન, કોઓર્ડિનેશન, રિસ્પોન્સિવનેસ અને સપોર્ટને તમે શું રેટિંગ આપશો?',
+    label: 'સમગ્ર પ્રોજેક્ટ દરમિયાન અમારી ટીમનું કમ્યુનિકેશન, કોઓર્ડિનેશન, રિસ્પોન્સિવનેસ અને સપોર્ટને તમે શું રેટિંગ આપશો?',
+  },
+  {
+    no: 7,
+    en: 'How well does the final output of your project reflect your vision, requirements, and expectations?',
+    gu: 'આપનો લાસ્ટ પ્રોજેક્ટ તમારી વિઝન, જરૂરિયાતો અને અપેક્ષાઓને કેટલી સારી રીતે રજૂ કરે છે?',
+    label: 'આપનો લાસ્ટ પ્રોજેક્ટ તમારી વિઝન, જરૂરિયાતો અને અપેક્ષાઓને કેટલી સારી રીતે રજૂ કરે છે?',
+  },
+  {
+    no: 8,
+    en: 'How satisfied are you with our ability to consistently deliver quality work on time?',
+    gu: 'ગુણવત્તાયુક્ત કામ સમયસર અને સતત પ્રદાન કરવાની અમારી ક્ષમતાથી તમે કેટલા સંતુષ્ટ છો?',
+    label: 'ગુણવત્તાયુક્ત કામ સમયસર અને સતત પ્રદાન કરવાની અમારી ક્ષમતાથી તમે કેટલા સંતુષ્ટ છો?',
+  },
+  {
+    no: 9,
+    en: 'Overall, how satisfied are you with the brand value and quality of work you receive from Sfumato in relation to your investment?',
+    gu: 'એકંદરે, તમારા દ્વારા કરવામાં આવેલા રોકાણની સામે Sfumato તરફથી મળતી બ્રાન્ડ વેલ્યુ અને વર્ક ક્વોલિટીથી તમે કેટલા સંતુષ્ટ છો?',
+    label: 'એકંદરે, તમારા દ્વારા કરવામાં આવેલા રોકાણની સામે Sfumato તરફથી મળતી બ્રાન્ડ વેલ્યુ અને વર્ક ક્વોલિટીથી તમે કેટલા સંતુષ્ટ છો?',
   },
 ] as const;
 

@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { copyText } from '../../lib/clipboard';
 import { QUESTIONS, getSatisfactionOption } from '../../lib/constants';
 import { formatAbsolute, formatRelative } from '../../lib/format';
-import type { Answer, Choice, Feedback, FeedbackStatus } from '../../types/feedback';
+import type { Choice, Feedback, FeedbackStatus } from '../../types/feedback';
 import { Button } from '../ui/Button';
 import { Dialog } from '../ui/Dialog';
 import { AudioPlayer } from './AudioPlayer';
@@ -152,90 +152,97 @@ export const FeedbackDrawer: React.FC<FeedbackDrawerProps> = ({
 
             {/* Question Sections */}
             {hasAnswers ? (
-              /* Multi-question answers cards */
+              /* Multi-question answers cards: rendered in question order for all existing answers */
               <div className="flex flex-col gap-5">
-                {QUESTIONS.map((q) => {
-                  const ans: Answer | undefined = item.feedback_answers?.find((a) => a.question_no === q.no);
-                  const opt = ans?.choice ? getSatisfactionOption(ans.choice) : null;
-                  const hasMsg = Boolean(ans?.message?.trim());
-                  const hasAudio = Boolean(ans?.audio_path);
+                {[...item.feedback_answers!]
+                  .sort((a, b) => a.question_no - b.question_no)
+                  .map((ans) => {
+                    const qDef = QUESTIONS.find((q) => q.no === ans.question_no);
+                    const opt = ans.choice ? getSatisfactionOption(ans.choice) : null;
+                    const hasMsg = Boolean(ans.message?.trim());
+                    const hasAudio = Boolean(ans.audio_path);
 
-                  return (
-                    <div key={q.no} className="flex flex-col gap-3 p-4 bg-card border border-line/10 rounded-card shadow-sm">
-                      {/* Question Label & Choice Badge */}
-                      <div className="flex items-start justify-between gap-3 pb-2 border-b border-line/5">
-                        <div className="flex flex-col min-w-0">
-                          <span className="text-[11px] font-semibold text-fg-3 uppercase tracking-wider">
-                            Question {q.no}
-                          </span>
-                          <p lang="gu" className="text-sm font-medium text-fg leading-relaxed mt-0.5">
-                            {q.label}
-                          </p>
-                        </div>
-                        {opt && (
-                          <span
-                            className={`shrink-0 inline-flex items-center px-2.5 py-1 text-xs font-bold rounded-full border whitespace-nowrap ${CHOICE_BADGE_STYLE[ans!.choice]}`}
-                          >
-                            {opt.en} / {opt.gu}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Message Text */}
-                      {hasMsg && (
-                        <div className="flex flex-col gap-1.5 pt-1">
-                          <div className="flex items-center justify-between text-xs text-fg-3">
-                            <span className="font-semibold uppercase tracking-wider text-[10px]">Typed Comments</span>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleCopy(`q_${q.no}`, ans!.message!)}
-                              icon={
-                                copiedKey === `q_${q.no}` ? (
-                                  <Check className="w-3.5 h-3.5 text-success" />
-                                ) : (
-                                  <Copy className="w-3.5 h-3.5" />
-                                )
-                              }
-                              className="h-6 px-2 text-[11px]"
-                            >
-                              {copiedKey === `q_${q.no}` ? 'Copied' : 'Copy'}
-                            </Button>
+                    return (
+                      <div key={ans.question_no} className="flex flex-col gap-3 p-4 bg-card border border-line/10 rounded-card shadow-sm">
+                        {/* Question Label & Choice Badge (Both languages) */}
+                        <div className="flex items-start justify-between gap-3 pb-2 border-b border-line/5">
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-[11px] font-semibold text-fg-3 uppercase tracking-wider">
+                              Question {ans.question_no}
+                            </span>
+                            <p className="text-sm font-bold text-fg leading-snug mt-0.5">
+                              {qDef?.en || `Question ${ans.question_no}`}
+                            </p>
+                            {qDef?.gu && (
+                              <p lang="gu" className="text-xs text-fg-3 leading-relaxed mt-1 font-['Noto_Sans_Gujarati',sans-serif]">
+                                {qDef.gu}
+                              </p>
+                            )}
                           </div>
-                          <p className="text-sm text-fg whitespace-pre-wrap leading-relaxed select-text bg-raised/50 p-3 rounded-control border border-line/5">
-                            {ans!.message}
-                          </p>
+                          {opt && (
+                            <span
+                              className={`shrink-0 inline-flex items-center px-2.5 py-1 text-xs font-bold rounded-full border whitespace-nowrap ${CHOICE_BADGE_STYLE[ans.choice]}`}
+                            >
+                              {opt.en} / {opt.gu}
+                            </span>
+                          )}
                         </div>
-                      )}
 
-                      {/* Audio Player */}
-                      {hasAudio && (
-                        <div className="flex flex-col gap-1.5 pt-1">
-                          <span className="text-[10px] font-semibold text-fg-3 uppercase tracking-wider">
-                            Voice Note
-                          </span>
-                          <AudioPlayer
-                            audioPath={ans!.audio_path || null}
-                            audioMime={ans!.audio_mime || null}
-                            storedDurationSec={ans!.audio_duration_sec || null}
-                          />
+                        {/* Message Text */}
+                        {hasMsg && (
+                          <div className="flex flex-col gap-1.5 pt-1">
+                            <div className="flex items-center justify-between text-xs text-fg-3">
+                              <span className="font-semibold uppercase tracking-wider text-[10px]">Typed Comments</span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleCopy(`q_${ans.question_no}`, ans.message!)}
+                                icon={
+                                  copiedKey === `q_${ans.question_no}` ? (
+                                    <Check className="w-3.5 h-3.5 text-success" />
+                                  ) : (
+                                    <Copy className="w-3.5 h-3.5" />
+                                  )
+                                }
+                                className="h-6 px-2 text-[11px]"
+                              >
+                                {copiedKey === `q_${ans.question_no}` ? 'Copied' : 'Copy'}
+                              </Button>
+                            </div>
+                            <p className="text-sm text-fg whitespace-pre-wrap leading-relaxed select-text bg-raised/50 p-3 rounded-control border border-line/5">
+                              {ans.message}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Audio Player */}
+                        {hasAudio && (
+                          <div className="flex flex-col gap-1.5 pt-1">
+                            <span className="text-[10px] font-semibold text-fg-3 uppercase tracking-wider">
+                              Voice Note
+                            </span>
+                            <AudioPlayer
+                              audioPath={ans.audio_path || null}
+                              audioMime={ans.audio_mime || null}
+                              storedDurationSec={ans.audio_duration_sec || null}
+                            />
+                          </div>
+                        )}
+
+                        {/* Fallback if no message & no audio */}
+                        {!hasMsg && !hasAudio && (
+                          <p className="text-xs text-fg-3 italic py-1">No additional comments</p>
+                        )}
+
+                        {/* Dev-only debug line */}
+                        <div className="text-[10px] text-fg-3 font-mono border-t border-line/10 pt-2 mt-1 flex flex-wrap gap-2">
+                          <span>audio_path: {ans.audio_path || 'null'}</span>
+                          <span>|</span>
+                          <span>audio_mime: {ans.audio_mime || 'null'}</span>
                         </div>
-                      )}
-
-                      {/* Fallback if no message & no audio */}
-                      {!hasMsg && !hasAudio && (
-                        <p className="text-xs text-fg-3 italic py-1">No additional comments</p>
-                      )}
-
-                      {/* Dev-only debug line */}
-                      <div className="text-[10px] text-fg-3 font-mono border-t border-line/10 pt-2 mt-1 flex flex-wrap gap-2">
-                        <span>audio_path: {ans?.audio_path || 'null'}</span>
-                        <span>|</span>
-                        <span>audio_mime: {ans?.audio_mime || 'null'}</span>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
               </div>
             ) : (
               /* Legacy rows fallback */
@@ -244,8 +251,11 @@ export const FeedbackDrawer: React.FC<FeedbackDrawerProps> = ({
                 <div className="flex items-start justify-between gap-3 p-4 bg-card border border-line/10 rounded-card">
                   <div className="flex flex-col min-w-0">
                     <span className="text-[11px] font-semibold text-fg-3 uppercase tracking-wider">Question 1</span>
-                    <p lang="gu" className="text-sm font-medium text-fg leading-relaxed mt-0.5">
-                      {QUESTIONS[0]?.label}
+                    <p className="text-sm font-bold text-fg leading-snug mt-0.5">
+                      {QUESTIONS[0]?.en}
+                    </p>
+                    <p lang="gu" className="text-xs text-fg-3 leading-relaxed mt-1 font-['Noto_Sans_Gujarati',sans-serif]">
+                      {QUESTIONS[0]?.gu}
                     </p>
                   </div>
                   <SatisfactionBadge satisfaction={item.satisfaction || null} rating={item.rating || null} />

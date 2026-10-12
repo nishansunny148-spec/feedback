@@ -3,15 +3,14 @@ import { Send, UploadCloud } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { COMPANY_NAME_MAX, LOGO_ALT, LOGO_SRC, QUESTIONS } from '../../lib/constants';
-import { detectInAppBrowser } from '../../lib/env-detect';
+import { detectInAppBrowser, extensionForMime } from '../../lib/env-detect';
 import { submitFeedback } from '../../services/feedback.service';
 import { uploadVoiceNote } from '../../services/storage.service';
 import type { Answer, Choice, Client } from '../../types/feedback';
-import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { ConsentCheck } from './ConsentCheck';
 import { InAppBrowserNotice } from './InAppBrowserNotice';
-import { QuestionCard } from './QuestionCard';
+import { QuestionCard, type QuestionVoice } from './QuestionCard';
 import { SuccessScreen } from './SuccessScreen';
 import { useVoiceRecorder, type UseVoiceRecorderResult } from '../../hooks/useVoiceRecorder';
 
@@ -38,9 +37,11 @@ const QuestionCardItem: React.FC<{
   onChoiceChange: (val: Choice) => void;
   message: string;
   onMessageChange: (val: string) => void;
+  voice: QuestionVoice | null;
+  onVoiceChange: (voice: QuestionVoice | null) => void;
+  onResetVoice: (questionNo: number) => void;
   activeRecordingQuestionNo: number | null;
   setActiveRecordingQuestionNo: React.Dispatch<React.SetStateAction<number | null>>;
-  onVoiceDataChange: (qNo: number, data: { blob: Blob | null; mimeType: string; extension: string; durationSeconds: number | null }) => void;
   disabled: boolean;
   choiceError?: string;
   uploadError?: string;
@@ -53,24 +54,16 @@ const QuestionCardItem: React.FC<{
   onChoiceChange,
   message,
   onMessageChange,
+  voice,
+  onVoiceChange,
+  onResetVoice,
   activeRecordingQuestionNo,
   setActiveRecordingQuestionNo,
-  onVoiceDataChange,
   disabled,
   choiceError,
   uploadError,
 }) => {
   const recorder = useVoiceRecorder();
-
-  // Sync recorder state up to parent
-  useEffect(() => {
-    onVoiceDataChange(questionNo, {
-      blob: recorder.blob,
-      mimeType: recorder.mimeType,
-      extension: recorder.extension,
-      durationSeconds: recorder.durationSeconds,
-    });
-  }, [questionNo, recorder.blob, recorder.mimeType, recorder.extension, recorder.durationSeconds, onVoiceDataChange]);
 
   // Sync recording active state
   useEffect(() => {
@@ -94,6 +87,12 @@ const QuestionCardItem: React.FC<{
       onChoiceChange={onChoiceChange}
       message={message}
       onMessageChange={onMessageChange}
+      voice={voice}
+      onVoiceChange={onVoiceChange}
+      onResetVoice={(qNo) => {
+        onResetVoice(qNo);
+        setActiveRecordingQuestionNo((current) => (current === qNo ? null : current));
+      }}
       recorder={recorder}
       isOtherQuestionRecording={isOtherQuestionRecording}
       onStartRecording={() => setActiveRecordingQuestionNo(questionNo)}
@@ -115,14 +114,14 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ clientToken, client 
   const [nameError, setNameError] = useState<string | undefined>(undefined);
   const [companyError, setCompanyError] = useState<string | undefined>(undefined);
   const [choiceErrors, setChoiceErrors] = useState<Record<number, string>>({});
+  const [showSummaryError, setShowSummaryError] = useState<boolean>(false);
   const [consentError, setConsentError] = useState<string | undefined>(undefined);
 
-  // Voice recording state across questions
+  // Voice recording state across questions (single source of truth per question)
   const [activeRecordingQuestionNo, setActiveRecordingQuestionNo] = useState<number | null>(null);
-  const [voiceData, setVoiceData] = useState<Record<number, { blob: Blob | null; mimeType: string; extension: string; durationSeconds: number | null }>>({});
+  const [voices, setVoices] = useState<Record<number, QuestionVoice | null>>({});
 
   // Upload & submission state
-  const [uploadedAudioMap, setUploadedAudioMap] = useState<Record<number, UploadedAudio>>({});
   const [uploadErrors, setUploadErrors] = useState<Record<number, string>>({});
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
@@ -138,27 +137,38 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ clientToken, client 
     }
   }, [client?.name, companyName]);
 
-  const handleVoiceDataChange = React.useCallback(
-    (qNo: number, data: { blob: Blob | null; mimeType: string; extension: string; durationSeconds: number | null }) => {
-      setVoiceData((prev) => ({ ...prev, [qNo]: data }));
-      // Clear uploaded audio if user deleted or re-recorded
-      if (!data.blob) {
-        setUploadedAudioMap((prev) => {
-          if (!prev[qNo]) return prev;
-          const next = { ...prev };
-          delete next[qNo];
-          return next;
-        });
-        setUploadErrors((prev) => {
-          if (!prev[qNo]) return prev;
-          const next = { ...prev };
-          delete next[qNo];
-          return next;
-        });
+  const handleResetVoice = React.useCallback((qNo: number) => {
+    setVoices((prev) => {
+      const existing = prev[qNo];
+      if (existing?.url) {
+        try {
+          URL.revokeObjectURL(existing.url);
+        } catch {
+          /* ignore */
+        }
       }
-    },
-    [],
-  );
+      if (!prev[qNo]) return prev;
+      return { ...prev, [qNo]: null };
+    });
+    setUploadErrors((prev) => {
+      if (!prev[qNo]) return prev;
+      const next = { ...prev };
+      delete next[qNo];
+      return next;
+    });
+  }, []);
+
+  const handleVoiceChange = React.useCallback((qNo: number, voice: QuestionVoice | null) => {
+    setVoices((prev) => ({ ...prev, [qNo]: voice }));
+    if (!voice) {
+      setUploadErrors((prev) => {
+        if (!prev[qNo]) return prev;
+        const next = { ...prev };
+        delete next[qNo];
+        return next;
+      });
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -167,6 +177,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ clientToken, client 
     setNameError(undefined);
     setCompanyError(undefined);
     setChoiceErrors({});
+    setShowSummaryError(false);
     setConsentError(undefined);
     setUploadErrors({});
 
@@ -186,14 +197,20 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ clientToken, client 
     }
 
     const newChoiceErrors: Record<number, string> = {};
+    let missingPickerCount = 0;
     for (const q of QUESTIONS) {
       if (!choices[q.no]) {
         newChoiceErrors[q.no] = `Please choose an option for Question ${q.no}.`;
         hasValidationError = true;
+        missingPickerCount++;
         if (!firstErrorId) firstErrorId = `field-q${q.no}-choice`;
       }
     }
     setChoiceErrors(newChoiceErrors);
+
+    if (missingPickerCount > 0) {
+      setShowSummaryError(true);
+    }
 
     if (consent !== true) {
       setConsentError('You must agree to proceed.');
@@ -212,35 +229,52 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ clientToken, client 
     setSubmitting(true);
     setUploadProgress(0.05);
 
-    // Upload voice notes in parallel for questions that have audio
-    const newUploadedMap = { ...uploadedAudioMap };
-    const questionsToUpload = QUESTIONS.filter((q) => voiceData[q.no]?.blob && !newUploadedMap[q.no]);
+    // Filter questions that actually have a valid voice note (voice !== null && voice.blob.size > 0 && voice.durationSec > 0)
+    const questionsToUpload = QUESTIONS.filter((q) => {
+      const v = voices[q.no];
+      return Boolean(v && v.blob && v.blob.size > 0 && v.durationSec > 0);
+    });
+
+    const uploadedThisSubmit: Record<number, UploadedAudio> = {};
     const newUploadErrors: Record<number, string> = {};
 
     if (questionsToUpload.length > 0) {
-      const uploadPromises = questionsToUpload.map(async (q) => {
-        const data = voiceData[q.no]!;
-        const rawMime = data.mimeType ? data.mimeType.split(';')[0] : 'audio/webm';
-        try {
-          const res = await uploadVoiceNote(data.blob!, data.extension, rawMime, (progress) => {
-            setUploadProgress(progress);
-          });
-          const cleanMime = res.mime.split(';')[0];
-          newUploadedMap[q.no] = {
-            path: res.path,
-            mime: cleanMime,
-            durationSec: data.durationSeconds ? Math.round(data.durationSeconds) : undefined,
-          };
-        } catch (err: unknown) {
-          const msg = err instanceof Error ? err.message : 'Upload failed';
-          newUploadErrors[q.no] = `Voice note upload failed: ${msg}. Tap submit to retry.`;
+      // Concurrency limit of up to 3 in parallel
+      const queue = [...questionsToUpload];
+      let completedCount = 0;
+      const totalCount = questionsToUpload.length;
+
+      const runWorker = async () => {
+        while (queue.length > 0) {
+          const q = queue.shift();
+          if (!q) break;
+          const v = voices[q.no]!;
+          const rawMime = v.mime ? v.mime.split(';')[0] : 'audio/webm';
+          const ext = extensionForMime(rawMime);
+          try {
+            const res = await uploadVoiceNote(v.blob, ext, rawMime, (progress) => {
+              const overall = (completedCount + progress) / totalCount;
+              setUploadProgress(overall);
+            });
+            const cleanMime = res.mime.split(';')[0];
+            uploadedThisSubmit[q.no] = {
+              path: res.path,
+              mime: cleanMime,
+              durationSec: Math.round(v.durationSec),
+            };
+            completedCount++;
+            setUploadProgress(completedCount / totalCount);
+          } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : 'Upload failed';
+            newUploadErrors[q.no] = `Voice note upload failed: ${msg}. Tap submit to retry.`;
+          }
         }
-      });
+      };
 
-      await Promise.all(uploadPromises);
+      const concurrency = Math.min(3, questionsToUpload.length);
+      const workers = Array.from({ length: concurrency }, () => runWorker());
+      await Promise.all(workers);
     }
-
-    setUploadedAudioMap(newUploadedMap);
 
     if (Object.keys(newUploadErrors).length > 0) {
       setUploadErrors(newUploadErrors);
@@ -253,18 +287,48 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ clientToken, client 
       return;
     }
 
+    // Dev-only console.debug before the RPC call showing, per question, whether audio is included and its blob size
+    if (import.meta.env.DEV) {
+      console.debug(
+        'Submission audio payload summary per question:',
+        QUESTIONS.map((q) => {
+          const v = voices[q.no];
+          const hasAudio = Boolean(
+            v && v.blob && v.blob.size > 0 && v.durationSec > 0 && uploadedThisSubmit[q.no]?.path
+          );
+          return {
+            questionNo: q.no,
+            hasAudio,
+            blobSize: v?.blob ? v.blob.size : 0,
+            audioPath: uploadedThisSubmit[q.no]?.path,
+          };
+        })
+      );
+    }
+
     // Call RPC after all uploads succeeded
     try {
       const answers: Answer[] = QUESTIONS.map((q) => {
-        const audio = newUploadedMap[q.no];
-        return {
+        const v = voices[q.no];
+        const hasValidVoice = Boolean(v && v.blob && v.blob.size > 0 && v.durationSec > 0);
+        const uploaded = hasValidVoice ? uploadedThisSubmit[q.no] : undefined;
+
+        const item: Answer = {
           question_no: q.no,
           choice: choices[q.no]!,
-          message: messages[q.no]?.trim() || undefined,
-          audio_path: audio?.path,
-          audio_mime: audio?.mime,
-          audio_duration_sec: audio?.durationSec,
         };
+
+        const msg = messages[q.no]?.trim();
+        if (msg) item.message = msg;
+
+        // Audio fields included only for answers that have a successfully uploaded file
+        if (uploaded && uploaded.path) {
+          item.audio_path = uploaded.path;
+          item.audio_mime = uploaded.mime;
+          item.audio_duration_sec = uploaded.durationSec;
+        }
+
+        return item;
       });
 
       await submitFeedback({
@@ -287,17 +351,27 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ clientToken, client 
   };
 
   const handleResetForm = () => {
+    Object.values(voices).forEach((v) => {
+      if (v?.url) {
+        try {
+          URL.revokeObjectURL(v.url);
+        } catch {
+          /* ignore */
+        }
+      }
+    });
     setIsSuccess(false);
     setClientName('');
     setCompanyName(client?.name.slice(0, COMPANY_NAME_MAX) ?? '');
     setChoices({});
     setMessages({});
+    setVoices({});
     setConsent(true);
-    setUploadedAudioMap({});
     setUploadErrors({});
     setNameError(undefined);
     setCompanyError(undefined);
     setChoiceErrors({});
+    setShowSummaryError(false);
     setConsentError(undefined);
   };
 
@@ -317,37 +391,44 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ clientToken, client 
       {/* Header */}
       <header className="w-full text-left">
         {/* 1. Logo Row */}
-        <div className="w-full">
-          <img
-            src={LOGO_SRC}
-            alt={LOGO_ALT}
-            decoding="async"
-            draggable={false}
+        <div className="w-full mt-[15px] sm:mt-[27px]">
+          <div
+            role="img"
+            aria-label={LOGO_ALT}
             style={{
-              filter: 'brightness(0) invert(1)',
+              backgroundColor: '#000000',
+              maskImage: `url(${LOGO_SRC})`,
+              WebkitMaskImage: `url(${LOGO_SRC})`,
+              maskSize: 'contain',
+              WebkitMaskSize: 'contain',
+              maskRepeat: 'no-repeat',
+              WebkitMaskRepeat: 'no-repeat',
+              maskPosition: 'right center',
+              WebkitMaskPosition: 'right center',
               width: 'clamp(170px, 48%, 260px)',
-              height: 'auto',
+              aspectRatio: '749 / 76',
               display: 'block',
               marginLeft: 'auto',
               marginRight: 0,
               padding: 0,
+              opacity: 1,
             }}
             className="select-none p-0 border-0 outline-none shadow-none"
           />
         </div>
 
         {/* 2. Title Block */}
-        <div style={{ marginTop: 'clamp(56px, 14vw, 110px)' }} className="text-left">
-          {client?.project && <span className="eyebrow block mb-1 text-left">{client.project}</span>}
+        <div style={{ marginTop: 'clamp(40px, 10vw, 72px)' }} className="text-left">
+          {client?.project && <span className="eyebrow block mb-1 text-left text-[#3F3F3F]">{client.project}</span>}
           <h1
             style={{
               fontFamily: 'Gotham, system-ui, sans-serif',
               fontWeight: 700,
-              fontSize: 'clamp(22px, 4.6vw, 28px)',
+              fontSize: 'clamp(19px, 3.9vw, 24px)',
               lineHeight: 1.1,
-              color: '#ffffff',
+              color: '#0A0A0A',
             }}
-            className="tracking-tight text-white"
+            className="tracking-tight text-[#0A0A0A]"
           >
             Better Together
           </h1>
@@ -357,12 +438,12 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ clientToken, client 
               fontWeight: 400,
               fontSize: 'clamp(17px, 3.7vw, 23px)',
               lineHeight: 1.2,
-              color: 'rgba(255, 255, 255, 0.85)',
+              color: '#3F3F3F',
               marginTop: '4px',
               maxWidth: '80%',
             }}
           >
-            Your honest 9 Inputs helps us grow &amp; serve your brand better.
+            Your honest {QUESTIONS.length} Inputs helps us grow &amp; serve your brand better.
           </p>
         </div>
       </header>
@@ -373,10 +454,15 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ clientToken, client 
       {/* 1. Name */}
       <Input
         id="field-clientName"
-        label="Name *"
-        labelClassName="block text-[16px] font-normal text-white mb-[10px] text-left p-0 m-0"
+        label={
+          <span>
+            Name <span className="text-[#C62828]">*</span>
+          </span>
+        }
+        labelClassName="block text-[16px] font-normal text-[#0A0A0A] mb-[10px] text-left p-0 m-0"
         containerClassName="gap-0"
-        className="h-[52px] rounded-[14px]"
+        className="control-field h-[52px] rounded-[14px] bg-white text-[#0A0A0A] placeholder-[#6B6B6B] transition-all"
+        style={{ border: 'var(--control-border, 1px solid #CFCFCF)' }}
         autoComplete="name"
         value={clientName}
         onChange={(e) => {
@@ -390,10 +476,15 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ clientToken, client 
       {/* 2. Company Name */}
       <Input
         id="field-companyName"
-        label="Company Name *"
-        labelClassName="block text-[16px] font-normal text-white mb-[10px] text-left p-0 m-0"
+        label={
+          <span>
+            Company Name <span className="text-[#C62828]">*</span>
+          </span>
+        }
+        labelClassName="block text-[16px] font-normal text-[#0A0A0A] mb-[10px] text-left p-0 m-0"
         containerClassName="gap-0"
-        className="h-[52px] rounded-[14px]"
+        className="control-field h-[52px] rounded-[14px] bg-white text-[#0A0A0A] placeholder-[#6B6B6B] transition-all"
+        style={{ border: 'var(--control-border, 1px solid #CFCFCF)' }}
         autoComplete="organization"
         maxLength={COMPANY_NAME_MAX}
         value={companyName}
@@ -415,14 +506,22 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ clientToken, client 
           questionLabel={q.label}
           choice={choices[q.no]}
           onChoiceChange={(val) => {
-            setChoices((prev) => ({ ...prev, [q.no]: val }));
+            setChoices((prev) => {
+              const next = { ...prev, [q.no]: val };
+              if (QUESTIONS.every((item) => Boolean(next[item.no]))) {
+                setShowSummaryError(false);
+              }
+              return next;
+            });
             setChoiceErrors((prev) => ({ ...prev, [q.no]: '' }));
           }}
           message={messages[q.no] || ''}
           onMessageChange={(val) => setMessages((prev) => ({ ...prev, [q.no]: val }))}
+          voice={voices[q.no] ?? null}
+          onVoiceChange={(v) => handleVoiceChange(q.no, v)}
+          onResetVoice={handleResetVoice}
           activeRecordingQuestionNo={activeRecordingQuestionNo}
           setActiveRecordingQuestionNo={setActiveRecordingQuestionNo}
-          onVoiceDataChange={handleVoiceDataChange}
           disabled={submitting}
           choiceError={choiceErrors[q.no]}
           uploadError={uploadErrors[q.no]}
@@ -443,17 +542,17 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ clientToken, client 
 
       {/* Upload progress & notice */}
       {uploadProgress !== null && (
-        <div className="w-full flex flex-col gap-1.5 p-3.5 bg-accent/10 border border-accent/20 rounded-card">
-          <div className="flex justify-between text-xs tabular font-medium text-fg">
-            <span className="flex items-center gap-1.5 text-accent-fg">
-              <UploadCloud className="w-4 h-4 animate-bounce shrink-0" />
+        <div className="w-full flex flex-col gap-1.5 p-3.5 bg-[#F1F1F1] border border-[#D9D9D9] rounded-card text-[#0A0A0A]">
+          <div className="flex justify-between text-xs tabular font-medium text-[#0A0A0A]">
+            <span className="flex items-center gap-1.5 text-[#0A0A0A]">
+              <UploadCloud className="w-4 h-4 animate-bounce shrink-0 text-[#0A0A0A]" />
               <span>Uploading voice notes… Please do not close or leave this page.</span>
             </span>
             <span className="shrink-0">{Math.round(uploadProgress * 100)}%</span>
           </div>
-          <div className="w-full h-1.5 bg-raised rounded-full overflow-hidden">
+          <div className="w-full h-1.5 bg-[#D9D9D9] rounded-full overflow-hidden">
             <div
-              className="h-full bg-accent transition-all duration-200"
+              className="h-full bg-[#0A0A0A] transition-all duration-200"
               style={{ width: `${Math.max(5, uploadProgress * 100)}%` }}
             />
           </div>
@@ -461,22 +560,28 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ clientToken, client 
       )}
 
       {/* Submit Action */}
-      <div className="flex flex-col gap-2 mt-2 pt-2 border-t border-line/10">
-        <Button
+      <div className="flex flex-col gap-2 mt-2 pt-2 border-t border-[#D9D9D9]">
+        {showSummaryError && (
+          <p className="text-xs text-[#C62828] font-medium text-center" role="alert">
+            Please answer all {QUESTIONS.length} questions
+          </p>
+        )}
+        <button
           type="submit"
-          variant="primary"
-          size="lg"
-          loading={submitting}
           disabled={submitting || activeRecordingQuestionNo !== null}
-          icon={
-            <Send className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-          }
-          className="w-full text-sm sm:text-base tracking-wide py-3.5 shadow-xl shadow-accent/20"
+          className="submit-feedback-btn w-full text-sm sm:text-base font-bold tracking-wide py-3.5 rounded-control flex items-center justify-center gap-2 select-none"
         >
-          {submitting ? 'Sending your feedback…' : 'Submit Feedback'}
-        </Button>
-        <p className="text-[11px] text-fg-3 text-center">
-          Encrypted & securely sent directly to the team
+          {submitting ? (
+            <span>Sending your feedback…</span>
+          ) : (
+            <>
+              <span>Submit Feedback</span>
+              <Send className="w-4 h-4 text-white transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+            </>
+          )}
+        </button>
+        <p className="text-[11px] text-[#3F3F3F] text-center">
+          Encrypted &amp; securely sent directly to the team
         </p>
       </div>
     </motion.form>

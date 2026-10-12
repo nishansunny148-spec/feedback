@@ -15,10 +15,10 @@ export interface FeedbackTableProps {
   onSortChange: (sort: FeedbackSort, dir: SortDirection) => void;
 }
 
-const CHOICE_BADGE_STYLE: Record<Choice, string> = {
-  excellent: 'bg-success/15 text-success border-success/30',
-  satisfactory: 'bg-warning/15 text-warning border-warning/30',
-  wants_improvements: 'bg-danger/15 text-danger border-danger/30',
+const SQUARE_STYLE: Record<Choice, string> = {
+  excellent: 'bg-emerald-500 border-emerald-600',
+  satisfactory: 'bg-amber-500 border-amber-600',
+  wants_improvements: 'bg-red-500 border-red-600',
 };
 
 export const FeedbackTable: React.FC<FeedbackTableProps> = ({
@@ -69,8 +69,9 @@ export const FeedbackTable: React.FC<FeedbackTableProps> = ({
           {items.map((item) => {
             const hasAnswers = item.feedback_answers && item.feedback_answers.length > 0;
 
-            // Answers badges per question
-            const answerBadges = QUESTIONS.map((q) => {
+            // Answers compact squares per question
+            let answeredCount = 0;
+            const answerSquares = QUESTIONS.map((q) => {
               let choice: Choice | null = null;
               if (hasAnswers) {
                 const found = item.feedback_answers!.find((a) => a.question_no === q.no);
@@ -81,27 +82,29 @@ export const FeedbackTable: React.FC<FeedbackTableProps> = ({
                 choice = item.satisfaction_q2;
               }
 
-              if (!choice) {
+              if (choice) {
+                answeredCount++;
+                const opt = getSatisfactionOption(choice);
+                const label = `Q${q.no}: ${opt.en}`;
                 return (
                   <span
                     key={q.no}
-                    className="inline-flex items-center px-1.5 py-0.5 text-[11px] font-semibold rounded bg-raised text-fg-3 border border-line/10"
-                    title={`Q${q.no}: Unanswered`}
-                  >
-                    Q{q.no} -
-                  </span>
+                    style={{ width: '14px', height: '14px' }}
+                    className={`inline-block rounded-[3px] border ${SQUARE_STYLE[choice]} shrink-0`}
+                    title={label}
+                    aria-label={label}
+                  />
                 );
               }
 
-              const opt = getSatisfactionOption(choice);
               return (
                 <span
                   key={q.no}
-                  className={`inline-flex items-center px-2 py-0.5 text-[11px] font-bold rounded-full border whitespace-nowrap ${CHOICE_BADGE_STYLE[choice]}`}
-                  title={`Q${q.no}: ${opt.en} / ${opt.gu}`}
-                >
-                  Q{q.no}: {opt.short}
-                </span>
+                  style={{ width: '14px', height: '14px' }}
+                  className="inline-block rounded-[3px] border border-fg-3/30 bg-transparent shrink-0"
+                  title={`Q${q.no}: No answer`}
+                  aria-label={`Q${q.no}: No answer`}
+                />
               );
             });
 
@@ -157,9 +160,16 @@ export const FeedbackTable: React.FC<FeedbackTableProps> = ({
                   </div>
                 </td>
 
-                {/* Answers column (Q1 / Q2 / Q3 badges) */}
-                <td className="py-3.5 px-4">
-                  <div className="flex flex-wrap items-center gap-1.5">{answerBadges}</div>
+                {/* Answers column */}
+                <td className="py-3.5 px-4 whitespace-nowrap">
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1" role="group" aria-label="Question ratings">
+                      {answerSquares}
+                    </div>
+                    <span className="text-xs text-fg-3 tabular font-medium">
+                      {answeredCount}/{QUESTIONS.length}
+                    </span>
+                  </div>
                 </td>
 
                 {/* Notes column */}
