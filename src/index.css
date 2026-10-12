@@ -53,69 +53,15 @@
     --glass-fill-a: 0.62;
 
     color-scheme: dark;
-  }
-
-  [data-theme='light'] {
-    --bg: 250 250 247;
-    --bg-raised: 255 255 255;
-    --bg-card: 255 255 255;
-    --line: 10 10 11;
-    --line-a: 0.09;
-    --line-strong-a: 0.18;
-    --fg: 17 17 19;
-    --fg-2: 72 72 80;
-    --fg-3: 100 100 108;
-    --accent: 198 255 61;
-    --accent-ink: 10 10 11;
-    --accent-fg: 63 104 0;
-    --rec: 214 40 40;
-    --success: 6 135 82;
-    --warning: 168 98 0;
-    --danger: 205 36 36;
-    --danger-ink: 255 255 255;
-    --ring: 63 104 0;
-    --glow-a: 170 230 30;
-    --glow-b: 140 120 255;
-    --glow-opacity: 0.35;
-    --grain-opacity: 0.05;
-    --shadow-glass: inset 0 1px 0 rgb(255 255 255 / 0.9), 0 1px 2px rgb(10 10 11 / 0.06),
-      0 24px 48px -28px rgb(10 10 11 / 0.22);
-    --shadow-lift: 0 12px 32px -16px rgb(10 10 11 / 0.25);
-    --glass-fill: 255 255 255;
-    --glass-fill-a: 0.72;
-
-    color-scheme: light;
-  }
-
-  /* No-JS fallback: follow the OS when no explicit theme attribute is set. */
-  @media (prefers-color-scheme: light) {
-    :root:not([data-theme]) {
-      --bg: 250 250 247;
-      --bg-raised: 255 255 255;
-      --bg-card: 255 255 255;
-      --line: 10 10 11;
-      --line-a: 0.09;
-      --line-strong-a: 0.18;
-      --fg: 17 17 19;
-      --fg-2: 72 72 80;
-      --fg-3: 100 100 108;
-      --accent-fg: 63 104 0;
-      --rec: 214 40 40;
-      --success: 6 135 82;
-      --warning: 168 98 0;
-      --danger: 205 36 36;
-      --danger-ink: 255 255 255;
-      --ring: 63 104 0;
-      --glow-opacity: 0.35;
-      --glass-fill: 255 255 255;
-      --glass-fill-a: 0.72;
-      color-scheme: light;
-    }
+    background-color: var(--bg, #0a0a0a);
+    color: #ffffff;
   }
 
   html {
-    background-color: rgb(var(--bg));
-    color: rgb(var(--fg));
+    color-scheme: dark;
+    background-color: var(--bg, #0a0a0a);
+    color: #ffffff;
+    min-height: 100%;
     -webkit-text-size-adjust: 100%;
     -webkit-tap-highlight-color: transparent;
     text-rendering: optimizeLegibility;
@@ -123,9 +69,33 @@
 
   body {
     @apply font-sans antialiased;
-    min-height: 100dvh;
+    min-height: 100%;
+    background-color: var(--bg, #0a0a0a);
+    color: #ffffff;
     font-size: 15px;
     line-height: 1.6;
+  }
+
+  #root {
+    min-height: 100%;
+    background-color: var(--bg, #0a0a0a);
+  }
+
+  input,
+  textarea,
+  select,
+  input[type='checkbox'] {
+    color-scheme: dark;
+  }
+
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  textarea:-webkit-autofill,
+  select:-webkit-autofill {
+    -webkit-text-fill-color: #fff;
+    box-shadow: 0 0 0 1000px #121214 inset;
+    caret-color: #fff;
   }
 
   @media (min-width: 640px) {
@@ -305,9 +275,6 @@
     inset: 0;
     opacity: var(--grain-opacity);
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  }
-  [data-theme='light'] .atmo-grain {
-    filter: invert(1);
   }
 }
 
