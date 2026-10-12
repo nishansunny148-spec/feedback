@@ -3,22 +3,24 @@ import { cn } from '../../lib/cn';
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
+  labelClassName?: string;
+  containerClassName?: string;
   error?: string;
   hint?: string;
   icon?: React.ReactNode;
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ className, label, error, hint, icon, id, disabled, ...props }, ref) => {
+  ({ className, label, labelClassName, containerClassName, error, hint, icon, id, disabled, ...props }, ref) => {
     const inputId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : undefined);
     const errorId = error && inputId ? `${inputId}-error` : undefined;
     const hintId = hint && inputId ? `${inputId}-hint` : undefined;
     const describedBy = [errorId, hintId].filter(Boolean).join(' ') || undefined;
 
     return (
-      <div className="w-full flex flex-col gap-1.5">
+      <div className={cn('w-full flex flex-col gap-1.5', containerClassName)}>
         {label && (
-          <label htmlFor={inputId} className="text-xs font-medium text-fg-2">
+          <label htmlFor={inputId} className={cn('text-xs font-medium text-fg-2', labelClassName)}>
             {label}
           </label>
         )}
@@ -45,7 +47,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           </p>
         )}
         {error && (
-          <p id={errorId} className="text-xs text-danger font-medium" role="alert">
+          <p id={errorId} className="text-xs text-danger font-medium mt-1.5" role="alert">
             {error}
           </p>
         )}

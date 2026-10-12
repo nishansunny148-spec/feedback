@@ -29,7 +29,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({ children }) => {
       {/* Sidebar - Desktop */}
       <aside className="hidden md:flex flex-col w-64 border-r border-line/10 bg-raised/40 p-4 gap-6 shrink-0">
         <div className="flex items-center px-2 py-2">
-          <BrandLogo className="w-[120px]" />
+          <BrandLogo style={{ width: '160px' }} />
         </div>
 
         <nav className="flex flex-col gap-1">
@@ -73,7 +73,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({ children }) => {
       {/* Topbar - Mobile */}
       <header className="flex md:hidden items-center justify-between p-4 border-b border-line/10 bg-raised/60 backdrop-blur-md sticky top-0 z-30">
         <div className="flex items-center">
-          <BrandLogo className="w-[96px]" />
+          <BrandLogo style={{ width: '160px' }} />
         </div>
 
         <div className="flex items-center gap-2">

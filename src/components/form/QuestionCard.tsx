@@ -12,7 +12,9 @@ import { Waveform } from './Waveform';
 
 export interface QuestionCardProps {
   questionNo: number;
-  questionLabel: string;
+  questionEn: string;
+  questionGu: string;
+  questionLabel?: string;
   choice: Choice | undefined;
   onChoiceChange: (val: Choice) => void;
   message: string;
@@ -27,6 +29,8 @@ export interface QuestionCardProps {
 
 export const QuestionCard: React.FC<QuestionCardProps> = ({
   questionNo,
+  questionEn,
+  questionGu,
   questionLabel,
   choice,
   onChoiceChange,
@@ -47,6 +51,9 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const useFallback = !hasRecordingSupport() || Boolean(detectInAppBrowser());
+
+  const enText = questionEn || questionLabel || '';
+  const guText = questionGu || questionLabel || '';
 
   // Preview audio playback logic
   useEffect(() => {
@@ -150,32 +157,47 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
     <Card
       id={`question-card-${questionNo}`}
       variant="glass"
-      className="p-5 sm:p-6 flex flex-col gap-4 border border-line/15"
+      className="p-4 flex flex-col gap-[14px] border border-line/15"
     >
-      {/* a) "Question N" uppercase label + Gujarati question text */}
-      <div className="flex flex-col gap-1 w-full">
-        <span className="text-xs font-semibold text-fg-2 uppercase tracking-wider">
-          Question {questionNo} <span className="text-danger">*</span>
-        </span>
-        <p lang="gu" className="text-base sm:text-lg text-fg font-medium leading-relaxed font-sans mt-0.5">
-          {questionLabel}
-        </p>
+      {/* English (Gotham Bold 700, 16px, line-height 1.4, white) + Gujarati (Noto Sans Gujarati, 15px, line-height 1.6, 75% white) */}
+      <div className="flex flex-col w-full">
+        {/* English question block */}
+        <div className="grid grid-cols-[auto_1fr] gap-x-1.5 items-baseline">
+          <span className="font-bold text-[16px] leading-[1.4] text-white select-none">{questionNo}.</span>
+          <span className="font-bold text-[16px] leading-[1.4] text-white">
+            {enText}
+            <span className="text-danger ml-0.5">*</span>
+          </span>
+        </div>
+
+        {/* Gujarati question block directly below (margin-top 6px) */}
+        <div className="grid grid-cols-[auto_1fr] gap-x-1.5 items-baseline mt-[6px]" lang="gu">
+          <span className="text-[15px] leading-[1.6] text-white/75 font-['Noto_Sans_Gujarati',sans-serif] select-none">{questionNo}.</span>
+          <span className="text-[15px] leading-[1.6] text-white/75 font-['Noto_Sans_Gujarati',sans-serif]">
+            {guText}
+          </span>
+        </div>
       </div>
 
-      {/* b) 3-option picker without colored dots, horizontal in mobile view */}
-      <fieldset className="w-full flex flex-col gap-1.5" id={`field-q${questionNo}-choice`}>
-        <div className="grid grid-cols-3 gap-1.5 sm:gap-2.5 w-full">
+      {/* 3-option picker sit in ONE row at every screen size */}
+      <fieldset
+        className="w-full flex flex-col gap-1.5"
+        id={`field-q${questionNo}-choice`}
+        role="radiogroup"
+        aria-label={`Rating options for question ${questionNo}`}
+      >
+        <div className="grid grid-cols-3 gap-2 sm:gap-[10px] w-full items-stretch">
           {SATISFACTION_OPTIONS.map((opt) => {
             const selected = choice === opt.value;
             return (
               <label
                 key={opt.value}
                 className={cn(
-                  'relative flex flex-col sm:flex-row items-center sm:items-center justify-center sm:justify-start text-center sm:text-left gap-1.5 sm:gap-3 min-h-[60px] sm:min-h-[52px] w-full px-1.5 py-2 sm:px-4 sm:py-2.5 rounded-control cursor-pointer select-none transition-all duration-200',
+                  'relative flex flex-col items-center justify-start text-center py-3 px-1.5 rounded-[14px] cursor-pointer select-none transition-all duration-200 w-full min-w-0 glass',
                   'has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring has-[:focus-visible]:ring-offset-2 has-[:focus-visible]:ring-offset-bg',
                   selected
-                    ? 'bg-accent/10 border border-accent shadow-sm'
-                    : 'bg-raised border border-line/10 hover:border-line/30 hover:bg-card',
+                    ? 'bg-[rgb(var(--accent)/0.10)] border-[rgb(var(--accent))] shadow-sm'
+                    : 'border-white/10 hover:border-white/25 hover:bg-white/[0.04]',
                   choiceError && !selected && 'border-danger/60',
                   disabled && 'opacity-50 cursor-not-allowed',
                 )}
@@ -189,26 +211,36 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                   disabled={disabled}
                   className="sr-only"
                 />
+                {/* row 1: radio circle */}
                 <span
                   aria-hidden="true"
                   className={cn(
-                    'shrink-0 w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 flex items-center justify-center transition-colors',
-                    selected ? 'border-accent-fg' : 'border-line/30',
+                    'shrink-0 w-[20px] h-[20px] rounded-full border-2 flex items-center justify-center transition-colors mb-2',
+                    selected ? 'border-[rgb(var(--accent))]' : 'border-white/30',
                   )}
                 >
                   <span
                     className={cn(
-                      'w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full transition-transform duration-200',
-                      selected ? 'scale-100 bg-accent-fg' : 'scale-0',
+                      'w-[8px] h-[8px] rounded-full transition-transform duration-200',
+                      selected ? 'scale-100 bg-[rgb(var(--accent))]' : 'scale-0',
                     )}
                   />
                 </span>
-                <span className="flex flex-col min-w-0">
-                  <span className="text-xs sm:text-sm font-bold text-fg leading-tight whitespace-normal">{opt.en}</span>
-                  <span lang="gu" className="text-[10px] sm:text-xs text-fg-2 leading-tight">
-                    {opt.gu}
-                  </span>
-                </span>
+                {/* row 2: English label */}
+                <div
+                  className="w-full min-h-[2.7em] flex items-start justify-center text-center font-bold text-white leading-[1.25] tracking-normal [hyphens:none] [word-break:normal] [overflow-wrap:normal]"
+                  style={{ fontSize: 'clamp(12px, 3.5vw, 12px)' }}
+                >
+                  <span>{opt.en}</span>
+                </div>
+                {/* row 3: Gujarati label */}
+                <div
+                  lang="gu"
+                  className="w-full text-center text-white/70 font-['Noto_Sans_Gujarati',sans-serif] leading-tight mt-1 tracking-normal"
+                  style={{ fontSize: 'clamp(10px, 3vw, 13px)' }}
+                >
+                  <span>{opt.gu}</span>
+                </div>
               </label>
             );
           })}
@@ -231,11 +263,10 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
         tabIndex={-1}
       />
 
-      {/* c & d) Hint + Text box with round mic button inside at bottom-right */}
+      {/* Comments label + Text box with round mic button inside at bottom-right */}
       <div className="flex flex-col gap-1.5 w-full mt-1">
         <div className="flex items-center justify-between">
-          <span className="text-[11px] text-fg-3 uppercase tracking-wider font-semibold">Additional Comments</span>
-          <span className="text-[11px] text-fg-3"></span>
+          <span className="text-[12px] text-fg-3 font-normal">Comments</span>
         </div>
 
         <div className="relative w-full rounded-card border border-line/10 bg-raised p-3.5 focus-within:border-accent focus-within:ring-1 focus-within:ring-accent transition-all shadow-sm">
@@ -330,13 +361,9 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                 disabled={disabled}
                 rows={3}
                 maxLength={2000}
-                placeholder="Type your response or tap the mic to record a voice note (optional)…"
-                className="w-full bg-transparent border-0 resize-none text-sm text-fg placeholder:text-fg-3 focus:outline-none focus:ring-0 pb-8 pr-14"
+                placeholder="Type or dictate your message..."
+                className="w-full bg-transparent border-0 resize-none text-sm text-fg placeholder:text-fg-3 focus:outline-none focus:ring-0 pb-8 pr-12"
               />
-
-              <span className="absolute bottom-0 left-0 text-[11px] text-fg-3 tabular select-none">
-                {message.length}/2000
-              </span>
 
               {!recorder.blob && (
                 <button

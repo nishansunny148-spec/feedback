@@ -3,33 +3,41 @@ import type { Choice } from '../types/feedback';
 /* ───────────────────────── Branding ───────────────────────── */
 
 /** Swap to '/sfumato-logo.svg' once an SVG export is available in /public. */
-export const LOGO_SRC = '/sfumato-logo.png';
-export const LOGO_ALT = 'Sfumato';
+export const LOGO_SRC = '/sfumato-logo-black.png';
+export const LOGO_ALT = 'Sfumato – Branding & Advertising Agency';
 
 /* ───────────────────────── Questions ───────────────────────── */
 
 export interface QuestionDef {
   no: number;
-  label: string;
+  en: string;
+  gu: string;
+  label?: string;
 }
 
 export const QUESTIONS: readonly QuestionDef[] = [
   {
     no: 1,
+    en: 'How well does our team understand your brand, business requirements, and expectations before starting a project?',
+    gu: 'પ્રોજેક્ટ શરૂ કરતા પહેલાં અમારી ટીમ તમારી બ્રાન્ડ, વ્યવસાયિક જરૂરિયાતો અને અપેક્ષાઓને કેટલી સારી રીતે સમજે છે?',
     label: 'પ્રોજેક્ટ શરૂ કરતા પહેલાં અમારી ટીમ તમારી બ્રાન્ડ, વ્યવસાયિક જરૂરિયાતો અને અપેક્ષાઓને કેટલી સારી રીતે સમજે છે?',
   },
   {
     no: 2,
+    en: 'How would you rate the quality and visual appeal of our creative designs in relation to your brand?',
+    gu: 'તમારી બ્રાન્ડને અનુરૂપ અમારી ક્રિએટિવ ડિઝાઇનની ગુણવત્તા, વિઝ્યુઅલસ ને તમે શું રેટિંગ કરશો?',
     label: 'તમારી બ્રાન્ડને અનુરૂપ અમારી ક્રિએટિવ ડિઝાઇનની ગુણવત્તા, વિઝ્યુઅલસ ને તમે શું રેટિંગ કરશો?',
   },
   {
     no: 3,
-    label: 'અમારી ટીમ દ્વારા બનાવવામાં આવતા વીડિયો અને મોશન કન્ટેન્ટની ક્વોલિટી, ક્રિએટિવિટી, સ્ટોરીટેલિંગ અને વિઝ્યુઅલ ઇમ્પેક્ટને તમે શું રેટિંગ કરશો?',
+    en: 'How would you rate the quality, creativity, story telling, and visual impact of the videos and motion content created by our team?',
+    gu: 'અમારી ટીમ દ્વારા બનાવવામાં આવતા વીડિયો અને મોશન કન્ટેન્ટની ક્વોલિટી, ક્રિએટિવિટી, સ્ટોરી ટેલિંગ અને વિઝ્યુઅલ ઇમ્પેક્ટને તમે શું રેટિંગ કરશો?',
+    label: 'અમારી ટીમ દ્વારા બનાવવામાં આવતા વીડિયો અને મોશન કન્ટેન્ટની ક્વોલિટી, ક્રિએટિવિટી, સ્ટોરી ટેલિંગ અને વિઝ્યુઅલ ઇમ્પેક્ટને તમે શું રેટિંગ કરશો?',
   },
 ] as const;
 
-export const QUESTION_1_LABEL = QUESTIONS[0].label;
-export const QUESTION_2_LABEL = QUESTIONS[1].label;
+export const QUESTION_1_LABEL = QUESTIONS[0].gu;
+export const QUESTION_2_LABEL = QUESTIONS[1].gu;
 
 export const COMPANY_NAME_MAX = 120;
 

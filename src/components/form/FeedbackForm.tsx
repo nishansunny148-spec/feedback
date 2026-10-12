@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 import { Send, UploadCloud } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { COMPANY_NAME_MAX, QUESTIONS } from '../../lib/constants';
+import { COMPANY_NAME_MAX, LOGO_ALT, LOGO_SRC, QUESTIONS } from '../../lib/constants';
 import { detectInAppBrowser } from '../../lib/env-detect';
 import { submitFeedback } from '../../services/feedback.service';
 import { uploadVoiceNote } from '../../services/storage.service';
@@ -31,7 +31,9 @@ interface UploadedAudio {
 /** Component rendering a single QuestionCard with its own isolated useVoiceRecorder hook instance. */
 const QuestionCardItem: React.FC<{
   questionNo: number;
-  questionLabel: string;
+  questionEn: string;
+  questionGu: string;
+  questionLabel?: string;
   choice: Choice | undefined;
   onChoiceChange: (val: Choice) => void;
   message: string;
@@ -44,6 +46,8 @@ const QuestionCardItem: React.FC<{
   uploadError?: string;
 }> = ({
   questionNo,
+  questionEn,
+  questionGu,
   questionLabel,
   choice,
   onChoiceChange,
@@ -83,6 +87,8 @@ const QuestionCardItem: React.FC<{
   return (
     <QuestionCard
       questionNo={questionNo}
+      questionEn={questionEn}
+      questionGu={questionGu}
       questionLabel={questionLabel}
       choice={choice}
       onChoiceChange={onChoiceChange}
@@ -309,11 +315,57 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ clientToken, client 
       className="w-full flex flex-col gap-6"
     >
       {/* Header */}
-      <div className="flex flex-col gap-1 text-center">
-        {client?.project && <span className="eyebrow">{client.project}</span>}
-        <h1 className="text-2xl sm:text-3xl tracking-tight text-fg font-bold">Client Feedback Form</h1>
-        <p className="text-xs sm:text-sm text-fg-2">Share your thoughts and rate your experience with us.</p>
-      </div>
+      <header className="w-full text-left">
+        {/* 1. Logo Row */}
+        <div className="w-full">
+          <img
+            src={LOGO_SRC}
+            alt={LOGO_ALT}
+            decoding="async"
+            draggable={false}
+            style={{
+              filter: 'brightness(0) invert(1)',
+              width: 'clamp(170px, 48%, 260px)',
+              height: 'auto',
+              display: 'block',
+              marginLeft: 'auto',
+              marginRight: 0,
+              padding: 0,
+            }}
+            className="select-none p-0 border-0 outline-none shadow-none"
+          />
+        </div>
+
+        {/* 2. Title Block */}
+        <div style={{ marginTop: 'clamp(56px, 14vw, 110px)' }} className="text-left">
+          {client?.project && <span className="eyebrow block mb-1 text-left">{client.project}</span>}
+          <h1
+            style={{
+              fontFamily: 'Gotham, system-ui, sans-serif',
+              fontWeight: 700,
+              fontSize: 'clamp(22px, 4.6vw, 28px)',
+              lineHeight: 1.1,
+              color: '#ffffff',
+            }}
+            className="tracking-tight text-white"
+          >
+            Better Together
+          </h1>
+          <p
+            style={{
+              fontFamily: 'Gotham, system-ui, sans-serif',
+              fontWeight: 400,
+              fontSize: 'clamp(17px, 3.7vw, 23px)',
+              lineHeight: 1.2,
+              color: 'rgba(255, 255, 255, 0.85)',
+              marginTop: '4px',
+              maxWidth: '80%',
+            }}
+          >
+            Your honest 9 Inputs helps us grow &amp; serve your brand better.
+          </p>
+        </div>
+      </header>
 
       {/* In-app browser notice */}
       {inAppBrowserName && <InAppBrowserNotice appName={inAppBrowserName} />}
@@ -322,7 +374,9 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ clientToken, client 
       <Input
         id="field-clientName"
         label="Name *"
-        placeholder="e.g. Alex Morgan"
+        labelClassName="block text-[16px] font-normal text-white mb-[10px] text-left p-0 m-0"
+        containerClassName="gap-0"
+        className="h-[52px] rounded-[14px]"
         autoComplete="name"
         value={clientName}
         onChange={(e) => {
@@ -337,7 +391,9 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ clientToken, client 
       <Input
         id="field-companyName"
         label="Company Name *"
-        placeholder="e.g. Acme Pvt. Ltd."
+        labelClassName="block text-[16px] font-normal text-white mb-[10px] text-left p-0 m-0"
+        containerClassName="gap-0"
+        className="h-[52px] rounded-[14px]"
         autoComplete="organization"
         maxLength={COMPANY_NAME_MAX}
         value={companyName}
@@ -349,11 +405,13 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ clientToken, client 
         error={companyError}
       />
 
-      {/* 3. Question Cards (Q1, Q2, Q3, etc. dynamically rendered) */}
+      {/* 3. Question Cards */}
       {QUESTIONS.map((q) => (
         <QuestionCardItem
           key={q.no}
           questionNo={q.no}
+          questionEn={q.en}
+          questionGu={q.gu}
           questionLabel={q.label}
           choice={choices[q.no]}
           onChoiceChange={(val) => {

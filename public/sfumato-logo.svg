@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 540 50" fill="currentColor">
+  <style>
+    .brand-title { font-family: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif; font-weight: 800; font-size: 36px; letter-spacing: -0.03em; }
+    .brand-reg { font-size: 14px; font-weight: 500; }
+    .brand-sub { font-family: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif; font-weight: 600; font-style: italic; font-size: 18px; letter-spacing: -0.01em; opacity: 0.85; }
+  </style>
+  <text x="0" y="36" class="brand-title" fill="currentColor">
+    sfumato<tspan class="brand-reg" dx="1" dy="-16">®</tspan>
+  </text>
+  <text x="195" y="35" class="brand-sub" fill="currentColor">
+    - Branding &amp; Advertising Agency
+  </text>
+</svg>

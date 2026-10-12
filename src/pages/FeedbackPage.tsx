@@ -1,6 +1,5 @@
 import React from 'react';
 import { FeedbackForm } from '../components/form/FeedbackForm';
-import { BrandLogo } from '../components/ui/BrandLogo';
 import { Card } from '../components/ui/Card';
 import { Skeleton } from '../components/ui/Skeleton';
 import { useClientToken } from '../hooks/useClientToken';
@@ -11,11 +10,8 @@ export const FeedbackPage: React.FC = () => {
   const recorder = useVoiceRecorder();
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-between p-4 sm:p-8 pt-safe pb-safe px-safe">
-      <div className="w-full max-w-form my-auto flex flex-col gap-6">
-        <header className="flex justify-center pt-2">
-          <BrandLogo className="w-[100px] sm:w-[100px]" />
-        </header>
+    <div className="w-full flex flex-col items-center pt-[20px] sm:pt-[28px] px-4 sm:px-8 pb-12">
+      <div className="w-full max-w-form flex flex-col">
 
         {clientLoading ? (
           <Card variant="glass" className="p-8 flex flex-col gap-6">
