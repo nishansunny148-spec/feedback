@@ -68,7 +68,7 @@
   html.theme-light body,
   html.theme-light #root {
     color-scheme: light;
-    background-color: #F8F5E9 !important;
+    background-color: var(--ivory-base, #F8F5E9) !important;
     color: #0A0A0A !important;
     min-height: 100%;
   }
@@ -97,7 +97,13 @@
   .theme-light,
   html.theme-light {
     color-scheme: light;
-    --page-bg: #F8F5E9;
+    --ivory-light: #FBF9F1;
+    --ivory-base: #F8F5E9;
+    --ivory-deep: #EDE7D3;
+    --page-gradient:
+      radial-gradient(1100px 700px at 12% -8%, rgba(255, 255, 255, 0.70) 0%, rgba(255, 255, 255, 0) 60%),
+      linear-gradient(165deg, var(--ivory-light) 0%, var(--ivory-base) 48%, var(--ivory-deep) 100%);
+    --page-bg: var(--ivory-base);
     --text-primary: #0A0A0A;
     --text-secondary: #3F3F3F;
     --placeholder: #6B6B6B;
@@ -137,6 +143,23 @@
     --ring: 10 10 10;
     --accent: 10 10 10;
     --accent-fg: 10 10 10;
+  }
+
+  /* Fixed full-screen ivory gradient on the public root (.theme-light) */
+  .theme-light:not(html):not(body) {
+    position: relative;
+    isolation: isolate;
+    background-color: transparent !important;
+  }
+
+  .theme-light:not(html):not(body)::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: var(--page-gradient);
+    background-repeat: no-repeat;
   }
 
   /* Hide atmosphere glow and grain on public light page */

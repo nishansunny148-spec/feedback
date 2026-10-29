@@ -35,6 +35,10 @@ export interface QuestionCardProps {
   disabled?: boolean;
   choiceError?: string;
   uploadError?: string;
+  /** false = open-ended question: no picker row, taller comments box. Defaults to true. */
+  picker?: boolean;
+  /** Inline error for open-ended questions (text or voice required). */
+  answerError?: string;
 }
 
 export const QuestionCard: React.FC<QuestionCardProps> = ({
@@ -55,6 +59,8 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
   disabled,
   choiceError,
   uploadError,
+  picker = true,
+  answerError,
 }) => {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState<number>(0);
@@ -258,6 +264,8 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
   const effectiveDuration = duration || voice?.durationSec || recorder.elapsedSeconds || 0;
   const progressPercent = effectiveDuration > 0 ? (currentTime / effectiveDuration) * 100 : 0;
   const isRecordingState = recorder.state === 'recording' || recorder.state === 'requesting';
+  /** Open-ended questions get a slightly taller comments box (still auto-grows to 200px). */
+  const commentsMinHeight = picker ? '88px' : '120px';
 
   return (
     <Card
@@ -291,7 +299,8 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
         </div>
       </div>
 
-      {/* 3-option picker sit in ONE row at every screen size */}
+      {/* 3-option picker sit in ONE row at every screen size (not rendered for open-ended questions) */}
+      {picker && (
       <fieldset
         className="w-full flex flex-col gap-1.5"
         id={`field-q${questionNo}-choice`}
@@ -373,6 +382,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
           </p>
         )}
       </fieldset>
+      )}
 
       {/* Hidden File Input for browser fallback */}
       <input
@@ -386,19 +396,20 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
       />
 
       {/* Comments label + Text box with round mic button inside at bottom-right */}
-      <div className="flex flex-col gap-[6px] w-full mt-1">
+      <div className="flex flex-col gap-[6px] w-full mt-1" id={`field-q${questionNo}-answer`}>
         <div className="flex items-center justify-between">
           <span className="text-[12px] text-[#3F3F3F] font-normal">Comments</span>
         </div>
 
         <div
-          style={{ border: 'var(--control-border, 1px solid #CFCFCF)' }}
-          className="control-field relative w-full rounded-card bg-white min-h-[88px] transition-all"
+          style={{ border: 'var(--control-border, 1px solid #CFCFCF)', minHeight: commentsMinHeight }}
+          className="control-field relative w-full rounded-card bg-white transition-all"
         >
           {isRecordingState ? (
             /* Active recording view */
             <div
-              className="w-full flex flex-col justify-between gap-3 min-h-[88px] p-3.5 rounded-card bg-[#F1F1F1] border border-[#D9D9D9] text-[#0A0A0A]"
+              style={{ minHeight: commentsMinHeight }}
+              className="w-full flex flex-col justify-between gap-3 p-3.5 rounded-card bg-[#F1F1F1] border border-[#D9D9D9] text-[#0A0A0A]"
               aria-live="polite"
             >
               <div className="flex items-center justify-between w-full">
@@ -497,7 +508,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                 maxLength={2000}
                 placeholder="Type or dictate your message..."
                 style={{
-                  minHeight: '88px',
+                  minHeight: commentsMinHeight,
                   maxHeight: '200px',
                   resize: 'none',
                   padding: '10px 52px 10px 14px',
@@ -540,6 +551,13 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
           <p className="text-xs text-[#C62828] flex items-center gap-1.5 mt-1" role="alert">
             <AlertCircle className="w-3.5 h-3.5 shrink-0" />
             <span>{recorder.error}</span>
+          </p>
+        )}
+
+        {answerError && (
+          <p className="text-xs text-[#C62828] font-medium flex items-center gap-1 mt-1" role="alert">
+            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+            <span>{answerError}</span>
           </p>
         )}
 

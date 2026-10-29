@@ -16,27 +16,37 @@ export function useAuth(): UseAuthResult {
 
   useEffect(() => {
     let isMounted = true;
-
-    getSession()
-      .then((s) => {
-        if (isMounted) {
-          setSession(s);
+    let revision = 0;
+    const verifySession = () => {
+      const request = ++revision;
+      setSession(null);
+      setLoading(true);
+      // Run outside Supabase's auth callback lock.
+      void Promise.resolve().then(getSession).then((verified) => {
+        if (isMounted && request === revision) {
+          setSession(verified);
           setLoading(false);
         }
-      })
-      .catch(() => {
-        if (isMounted) {
+      }).catch(() => {
+        if (isMounted && request === revision) {
           setSession(null);
           setLoading(false);
         }
       });
+    };
 
     const unsubscribe = onAuthChange((newSession) => {
       if (isMounted) {
-        setSession(newSession);
-        setLoading(false);
+        if (newSession) {
+          verifySession();
+        } else {
+          revision++;
+          setSession(null);
+          setLoading(false);
+        }
       }
     });
+    verifySession();
 
     return () => {
       isMounted = false;

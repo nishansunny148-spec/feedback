@@ -1,10 +1,11 @@
 import { ArrowDown, ArrowUp, ChevronRight, Mic } from 'lucide-react';
 import React from 'react';
-import { QUESTIONS, getSatisfactionOption } from '../../lib/constants';
+import { QUESTIONS, PICKER_QUESTION_COUNT, getSatisfactionOption } from '../../lib/constants';
 import { formatAbsolute, formatRelative } from '../../lib/format';
 import type { Choice, Feedback, FeedbackSort, FeedbackStatus, SortDirection } from '../../types/feedback';
 import { Button } from '../ui/Button';
 import { StatusSelect } from './StatusSelect';
+import { OpenAnswerMarkers } from './OpenAnswerMarkers';
 
 export interface FeedbackTableProps {
   items: Feedback[];
@@ -71,7 +72,7 @@ export const FeedbackTable: React.FC<FeedbackTableProps> = ({
 
             // Answers compact squares per question
             let answeredCount = 0;
-            const answerSquares = QUESTIONS.map((q) => {
+            const answerSquares = QUESTIONS.filter((q) => q.picker).map((q) => {
               let choice: Choice | null = null;
               if (hasAnswers) {
                 const found = item.feedback_answers!.find((a) => a.question_no === q.no);
@@ -167,8 +168,9 @@ export const FeedbackTable: React.FC<FeedbackTableProps> = ({
                       {answerSquares}
                     </div>
                     <span className="text-xs text-fg-3 tabular font-medium">
-                      {answeredCount}/{QUESTIONS.length}
+                      {answeredCount}/{PICKER_QUESTION_COUNT}
                     </span>
+                    <OpenAnswerMarkers answers={item.feedback_answers} />
                   </div>
                 </td>
 

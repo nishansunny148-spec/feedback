@@ -15,11 +15,17 @@ export interface Answer {
   id?: string;
   feedback_id?: string;
   question_no: number;
-  choice: Choice;
+  /** Omitted for open-ended questions (picker: false). */
+  choice?: Choice;
   message?: string;
   audio_path?: string;
   audio_mime?: string;
   audio_duration_sec?: number;
+}
+
+/** Answer as read back from the database: `choice` is null for open-ended questions and some old rows. */
+export interface StoredAnswer extends Omit<Answer, 'choice'> {
+  choice: Choice | null;
 }
 
 export interface Client {
@@ -47,7 +53,7 @@ export interface Feedback {
   audio_mime?: string | null;
   audio_duration_sec?: number | null;
   status: FeedbackStatus;
-  feedback_answers?: Answer[];
+  feedback_answers?: StoredAnswer[];
 }
 
 export interface SubmitFeedbackInput {

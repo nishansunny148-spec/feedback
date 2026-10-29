@@ -45,6 +45,8 @@ const QuestionCardItem: React.FC<{
   disabled: boolean;
   choiceError?: string;
   uploadError?: string;
+  picker: boolean;
+  answerError?: string;
 }> = ({
   questionNo,
   questionEn,
@@ -62,6 +64,8 @@ const QuestionCardItem: React.FC<{
   disabled,
   choiceError,
   uploadError,
+  picker,
+  answerError,
 }) => {
   const recorder = useVoiceRecorder();
 
@@ -99,6 +103,8 @@ const QuestionCardItem: React.FC<{
       disabled={disabled}
       choiceError={choiceError}
       uploadError={uploadError}
+      picker={picker}
+      answerError={answerError}
     />
   );
 };
@@ -114,6 +120,8 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ clientToken, client 
   const [nameError, setNameError] = useState<string | undefined>(undefined);
   const [companyError, setCompanyError] = useState<string | undefined>(undefined);
   const [choiceErrors, setChoiceErrors] = useState<Record<number, string>>({});
+  /** Errors for open-ended questions (picker: false): text or voice is required. */
+  const [answerErrors, setAnswerErrors] = useState<Record<number, string>>({});
   const [showSummaryError, setShowSummaryError] = useState<boolean>(false);
   const [consentError, setConsentError] = useState<string | undefined>(undefined);
 
@@ -160,6 +168,9 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ clientToken, client 
 
   const handleVoiceChange = React.useCallback((qNo: number, voice: QuestionVoice | null) => {
     setVoices((prev) => ({ ...prev, [qNo]: voice }));
+    if (voice && voice.blob.size > 0) {
+      setAnswerErrors((prev) => (prev[qNo] ? { ...prev, [qNo]: '' } : prev));
+    }
     if (!voice) {
       setUploadErrors((prev) => {
         if (!prev[qNo]) return prev;
@@ -177,6 +188,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ clientToken, client 
     setNameError(undefined);
     setCompanyError(undefined);
     setChoiceErrors({});
+    setAnswerErrors({});
     setShowSummaryError(false);
     setConsentError(undefined);
     setUploadErrors({});
@@ -197,18 +209,34 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ clientToken, client 
     }
 
     const newChoiceErrors: Record<number, string> = {};
-    let missingPickerCount = 0;
+    const newAnswerErrors: Record<number, string> = {};
+    let missingCount = 0;
     for (const q of QUESTIONS) {
-      if (!choices[q.no]) {
-        newChoiceErrors[q.no] = `Please choose an option for Question ${q.no}.`;
-        hasValidationError = true;
-        missingPickerCount++;
-        if (!firstErrorId) firstErrorId = `field-q${q.no}-choice`;
+      if (q.picker) {
+        // Picker questions: valid when an option is chosen; comments stay optional.
+        if (!choices[q.no]) {
+          newChoiceErrors[q.no] = `Please choose an option for Question ${q.no}.`;
+          hasValidationError = true;
+          missingCount++;
+          if (!firstErrorId) firstErrorId = `field-q${q.no}-choice`;
+        }
+      } else {
+        // Open-ended questions: valid when trimmed text is not empty OR a voice note exists.
+        const v = voices[q.no];
+        const hasText = Boolean(messages[q.no]?.trim());
+        const hasVoice = Boolean(v && v.blob && v.blob.size > 0);
+        if (!hasText && !hasVoice) {
+          newAnswerErrors[q.no] = 'Please type or record your answer';
+          hasValidationError = true;
+          missingCount++;
+          if (!firstErrorId) firstErrorId = `field-q${q.no}-answer`;
+        }
       }
     }
     setChoiceErrors(newChoiceErrors);
+    setAnswerErrors(newAnswerErrors);
 
-    if (missingPickerCount > 0) {
+    if (missingCount > 0) {
       setShowSummaryError(true);
     }
 
@@ -229,10 +257,10 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ clientToken, client 
     setSubmitting(true);
     setUploadProgress(0.05);
 
-    // Filter questions that actually have a valid voice note (voice !== null && voice.blob.size > 0 && voice.durationSec > 0)
+    // Match validation: a nonempty voice note is uploadable even when duration is unknown.
     const questionsToUpload = QUESTIONS.filter((q) => {
       const v = voices[q.no];
-      return Boolean(v && v.blob && v.blob.size > 0 && v.durationSec > 0);
+      return Boolean(v && v.blob && v.blob.size > 0);
     });
 
     const uploadedThisSubmit: Record<number, UploadedAudio> = {};
@@ -294,7 +322,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ clientToken, client 
         QUESTIONS.map((q) => {
           const v = voices[q.no];
           const hasAudio = Boolean(
-            v && v.blob && v.blob.size > 0 && v.durationSec > 0 && uploadedThisSubmit[q.no]?.path
+            v && v.blob && v.blob.size > 0 && uploadedThisSubmit[q.no]?.path
           );
           return {
             questionNo: q.no,
@@ -310,13 +338,15 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ clientToken, client 
     try {
       const answers: Answer[] = QUESTIONS.map((q) => {
         const v = voices[q.no];
-        const hasValidVoice = Boolean(v && v.blob && v.blob.size > 0 && v.durationSec > 0);
+        const hasValidVoice = Boolean(v && v.blob && v.blob.size > 0);
         const uploaded = hasValidVoice ? uploadedThisSubmit[q.no] : undefined;
 
         const item: Answer = {
           question_no: q.no,
-          choice: choices[q.no]!,
         };
+        // Only picker questions carry a choice; open-ended answers have no `choice` key.
+        const chosen = choices[q.no];
+        if (q.picker && chosen) item.choice = chosen;
 
         const msg = messages[q.no]?.trim();
         if (msg) item.message = msg;
@@ -371,6 +401,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ clientToken, client 
     setNameError(undefined);
     setCompanyError(undefined);
     setChoiceErrors({});
+    setAnswerErrors({});
     setShowSummaryError(false);
     setConsentError(undefined);
   };
@@ -508,7 +539,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ clientToken, client 
           onChoiceChange={(val) => {
             setChoices((prev) => {
               const next = { ...prev, [q.no]: val };
-              if (QUESTIONS.every((item) => Boolean(next[item.no]))) {
+              if (QUESTIONS.filter((item) => item.picker).every((item) => Boolean(next[item.no]))) {
                 setShowSummaryError(false);
               }
               return next;
@@ -516,7 +547,10 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ clientToken, client 
             setChoiceErrors((prev) => ({ ...prev, [q.no]: '' }));
           }}
           message={messages[q.no] || ''}
-          onMessageChange={(val) => setMessages((prev) => ({ ...prev, [q.no]: val }))}
+          onMessageChange={(val) => {
+            setMessages((prev) => ({ ...prev, [q.no]: val }));
+            if (val.trim()) setAnswerErrors((prev) => (prev[q.no] ? { ...prev, [q.no]: '' } : prev));
+          }}
           voice={voices[q.no] ?? null}
           onVoiceChange={(v) => handleVoiceChange(q.no, v)}
           onResetVoice={handleResetVoice}
@@ -525,6 +559,8 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ clientToken, client 
           disabled={submitting}
           choiceError={choiceErrors[q.no]}
           uploadError={uploadErrors[q.no]}
+          picker={q.picker}
+          answerError={answerErrors[q.no]}
         />
       ))}
 

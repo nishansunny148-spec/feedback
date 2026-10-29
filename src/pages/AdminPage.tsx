@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Navigate, useSearchParams } from 'react-router-dom';
 import { AdminShell } from '../components/admin/AdminShell';
 import { FeedbackCard } from '../components/admin/FeedbackCard';
 import { FeedbackDrawer } from '../components/admin/FeedbackDrawer';
@@ -16,7 +16,19 @@ import type { Feedback, FeedbackFilters, FeedbackSort, FeedbackStatus, Satisfact
 
 export const AdminPage: React.FC = () => {
   const { session, loading: authLoading } = useAuth();
-  const navigate = useNavigate();
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-8 bg-bg">
+        <Skeleton className="h-64 w-full max-w-lg rounded-hero" />
+      </div>
+    );
+  }
+  if (!session) return <Navigate to="/admin/login" replace />;
+  return <AdminInbox key={session.user.id} />;
+};
+
+// Mounted only after authentication: no inbox requests or subscriptions before login.
+const AdminInbox: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [clients, setClients] = useState<string[]>([]);
@@ -51,24 +63,15 @@ export const AdminPage: React.FC = () => {
     deleteFeedback,
   } = useFeedbackList(filters);
 
-  // Auth Guard
-  useEffect(() => {
-    if (!authLoading && !session) {
-      navigate('/admin/login');
-    }
-  }, [authLoading, session, navigate]);
-
   // Load clients list for dropdown
   useEffect(() => {
-    if (session) {
       listClients()
         .then((res) => {
           const names = Array.from(new Set(res.map((c) => c.name)));
           setClients(names);
         })
         .catch(() => {});
-    }
-  }, [session]);
+  }, []);
 
   const handleFilterChange = (newFilters: FeedbackFilters) => {
     setFilters(newFilters);
@@ -85,16 +88,6 @@ export const AdminPage: React.FC = () => {
     if (newFilters.dir !== 'desc') params.set('dir', newFilters.dir);
     setSearchParams(params, { replace: true });
   };
-
-  if (authLoading || (!session && authLoading)) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-8 bg-bg">
-        <Skeleton className="h-64 w-full max-w-lg rounded-hero" />
-      </div>
-    );
-  }
-
-  if (!session) return null;
 
   return (
     <AdminShell>

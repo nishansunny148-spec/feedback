@@ -179,7 +179,7 @@ export const FeedbackDrawer: React.FC<FeedbackDrawerProps> = ({
                               </p>
                             )}
                           </div>
-                          {opt && (
+                          {opt && ans.choice && (
                             <span
                               className={`shrink-0 inline-flex items-center px-2.5 py-1 text-xs font-bold rounded-full border whitespace-nowrap ${CHOICE_BADGE_STYLE[ans.choice]}`}
                             >

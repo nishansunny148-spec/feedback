@@ -1,11 +1,12 @@
 import { ChevronRight, Mic } from 'lucide-react';
 import React from 'react';
-import { QUESTIONS, getSatisfactionOption } from '../../lib/constants';
+import { QUESTIONS, PICKER_QUESTION_COUNT, getSatisfactionOption } from '../../lib/constants';
 import { formatRelative } from '../../lib/format';
 import type { Choice, Feedback, FeedbackStatus } from '../../types/feedback';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { StatusSelect } from './StatusSelect';
+import { OpenAnswerMarkers } from './OpenAnswerMarkers';
 
 export interface FeedbackCardProps {
   item: Feedback;
@@ -42,7 +43,7 @@ export const FeedbackCard: React.FC<FeedbackCardProps> = ({ item, onClick, onSta
 
   let answeredCount = 0;
   if (hasAnswers) {
-    answeredCount = item.feedback_answers!.filter((a) => Boolean(a.choice)).length;
+    answeredCount = QUESTIONS.filter((q) => q.picker && item.feedback_answers!.some((a) => a.question_no === q.no && a.choice)).length;
   } else {
     if (item.satisfaction) answeredCount++;
     if (item.satisfaction_q2) answeredCount++;
@@ -68,7 +69,7 @@ export const FeedbackCard: React.FC<FeedbackCardProps> = ({ item, onClick, onSta
       {/* Compact squares row per question */}
       <div className="flex items-center gap-2 text-xs">
         <div className="flex items-center gap-1" role="group" aria-label="Question ratings">
-          {QUESTIONS.map((q) => {
+          {QUESTIONS.filter((q) => q.picker).map((q) => {
             let choice: Choice | null = null;
             if (hasAnswers) {
               const found = item.feedback_answers!.find((a) => a.question_no === q.no);
@@ -105,8 +106,9 @@ export const FeedbackCard: React.FC<FeedbackCardProps> = ({ item, onClick, onSta
           })}
         </div>
         <span className="text-xs text-fg-3 tabular font-medium">
-          {answeredCount}/{QUESTIONS.length}
+          {answeredCount}/{PICKER_QUESTION_COUNT}
         </span>
+        <OpenAnswerMarkers answers={item.feedback_answers} />
 
         {voiceCount > 0 && (
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent/10 text-accent-fg tabular text-[10px] font-bold ml-1">

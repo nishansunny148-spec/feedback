@@ -13,9 +13,14 @@ export async function signOut(): Promise<void> {
 }
 
 export async function getSession(): Promise<Session | null> {
-  const { data, error } = await getSupabase().auth.getSession();
+  const auth = getSupabase().auth;
+  const { data, error } = await auth.getSession();
   if (error) throw toAppError(error);
-  return data.session;
+  if (!data.session) return null;
+  const { data: verified, error: verificationError } = await auth.getUser(data.session.access_token);
+  if (verificationError) throw toAppError(verificationError);
+  if (!verified.user || verified.user.id !== data.session.user.id) return null;
+  return { ...data.session, user: verified.user };
 }
 
 export function onAuthChange(cb: (s: Session | null) => void): () => void {

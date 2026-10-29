@@ -10,7 +10,7 @@ export const FeedbackPage: React.FC = () => {
   const recorder = useVoiceRecorder();
 
   return (
-    <div className="theme-light w-full min-h-screen flex flex-col items-center pt-[20px] sm:pt-[28px] px-4 sm:px-8 pb-12 bg-[#F8F5E9] text-[#0A0A0A]">
+    <div className="theme-light w-full min-h-screen flex flex-col items-center pt-[20px] sm:pt-[28px] px-4 sm:px-8 pb-12 bg-transparent text-[#0A0A0A]">
       <div className="w-full max-w-form flex flex-col">
 
         {clientLoading ? (
@@ -34,7 +34,7 @@ export const FeedbackPage: React.FC = () => {
 
       {/* Clean client-side footer */}
       <footer className="mt-8 text-center text-xs text-[#3F3F3F]">
-        <span>Powered by Voice Feedback</span>
+        <span>Powered by Sfumato&apos;s Voice Feedback</span>
       </footer>
     </div>
   );

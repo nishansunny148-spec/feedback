@@ -1,13 +1,13 @@
 import { getSupabase } from '../lib/supabase';
-import { isChoice } from '../lib/constants';
+import { getQuestion, isChoice } from '../lib/constants';
 import type {
-  Answer,
   Choice,
   Feedback,
   FeedbackStats,
   FeedbackStatus,
   ListFeedbackParams,
   ListFeedbackResult,
+  StoredAnswer,
   SubmitFeedbackInput,
 } from '../types/feedback';
 import { appError, toAppError } from './errors';
@@ -20,12 +20,13 @@ const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFi
 export function parseFeedback(row: Record<string, unknown>): Feedback {
   const status: FeedbackStatus = row.status === 'in_progress' || row.status === 'done' ? row.status : 'new';
   const rawAnswers = Array.isArray(row.feedback_answers) ? row.feedback_answers : [];
-  const feedback_answers: Answer[] = rawAnswers
-    .map((a: Record<string, unknown>) => ({
+  const feedback_answers: StoredAnswer[] = rawAnswers
+    .filter((a: unknown): a is Record<string, unknown> => typeof a === 'object' && a !== null)
+    .map((a) => ({
       id: str(a.id) ?? undefined,
       feedback_id: str(a.feedback_id) ?? undefined,
       question_no: Number(a.question_no ?? 0),
-      choice: isChoice(a.choice) ? a.choice : ('excellent' as Choice),
+      choice: isChoice(a.choice) ? a.choice : null,
       message: str(a.message) ?? undefined,
       audio_path: str(a.audio_path) ?? undefined,
       audio_mime: str(a.audio_mime) ?? undefined,
@@ -71,19 +72,20 @@ export async function submitFeedback(input: SubmitFeedbackInput): Promise<void> 
     throw appError('validation');
   }
 
-  // Ensure each answer has required fields
+  // Picker questions include `choice`; open-ended questions (picker: false) have NO `choice` key at all.
   const cleanAnswers = input.answers.map((a) => {
     const item: {
       question_no: number;
-      choice: Choice;
+      choice?: Choice;
       message?: string;
       audio_path?: string;
       audio_mime?: string;
       audio_duration_sec?: number;
     } = {
       question_no: Number(a.question_no),
-      choice: a.choice,
     };
+    const hasPicker = getQuestion(item.question_no)?.picker ?? true;
+    if (hasPicker && isChoice(a.choice)) item.choice = a.choice;
     const msg = blankToUndefined(a.message);
     if (msg) item.message = msg;
 
@@ -135,35 +137,30 @@ export async function listFeedback(params: ListFeedbackParams): Promise<ListFeed
   if (to) query = query.lte('created_at', to);
 
   const term = search ? sanitizeSearch(search) : '';
-  if (term) {
-    query = query.or(
-      `client_name.ilike.*${term}*,company_name.ilike.*${term}*,message.ilike.*${term}*,liked.ilike.*${term}*,changes_needed.ilike.*${term}*`,
-    );
-  }
 
   const { data, error } = await query;
   if (error) throw toAppError(error);
 
   let rows = rowsOf(data);
 
-  // Client-side filtering for search term matching inside feedback_answers message
+  // Search runs client-side so it covers header fields AND every answer message (including Question 9).
   if (term) {
     const lowerTerm = term.toLowerCase();
     rows = rows.filter((r) => {
-      const matchHeader =
-        r.client_name?.toLowerCase().includes(lowerTerm) ||
-        r.company_name?.toLowerCase().includes(lowerTerm) ||
-        r.message?.toLowerCase().includes(lowerTerm);
+      const matchHeader = [r.client_name, r.company_name, r.message, r.liked, r.changes_needed].some((v) =>
+        v?.toLowerCase().includes(lowerTerm),
+      );
       if (matchHeader) return true;
-      return r.feedback_answers?.some((a) => a.message?.toLowerCase().includes(lowerTerm));
+      return (r.feedback_answers ?? []).some((a) => a.message?.toLowerCase().includes(lowerTerm));
     });
   }
 
-  // Client-side filtering for needsWork (any answer is wants_improvements)
+  // Client-side filtering for needsWork (any answer WITH a choice is wants_improvements)
   if (needsWork) {
     rows = rows.filter((r) => {
-      if (r.feedback_answers && r.feedback_answers.length > 0) {
-        return r.feedback_answers.some((a) => a.choice === 'wants_improvements');
+      const choiced = (r.feedback_answers ?? []).filter((a) => a.choice !== null);
+      if (choiced.length > 0) {
+        return choiced.some((a) => a.choice === 'wants_improvements');
       }
       return r.satisfaction === 'wants_improvements' || r.satisfaction_q2 === 'wants_improvements';
     });
@@ -214,8 +211,11 @@ export async function getFeedbackStats(): Promise<FeedbackStats> {
       else if (row.status === 'done') stats.done += 1;
       else stats.new += 1;
 
-      if (Array.isArray(row.feedback_answers) && row.feedback_answers.length > 0) {
-        for (const ans of row.feedback_answers) {
+      const choicedAnswers = Array.isArray(row.feedback_answers)
+        ? row.feedback_answers.filter((a) => a && isChoice(a.choice))
+        : [];
+      if (choicedAnswers.length > 0) {
+        for (const ans of choicedAnswers) {
           if (isChoice(ans.choice)) {
             stats.totalAnswers += 1;
             stats.satisfaction[ans.choice] += 1;

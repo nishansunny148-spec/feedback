@@ -19,7 +19,8 @@ export function getSupabase(): SupabaseClient {
     }
     client = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
-        persistSession: true,
+        // Admin access requires a fresh login after a reload or a new browser visit.
+        persistSession: false,
         autoRefreshToken: true,
         detectSessionInUrl: false,
         storageKey: 'vf-auth',
