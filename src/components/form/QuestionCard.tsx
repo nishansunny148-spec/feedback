@@ -35,7 +35,7 @@ export interface QuestionCardProps {
   disabled?: boolean;
   choiceError?: string;
   uploadError?: string;
-  /** false = open-ended question: no picker row, taller comments box. Defaults to true. */
+  /** false = open-ended question: no picker row. Defaults to true. */
   picker?: boolean;
   /** Inline error for open-ended questions (text or voice required). */
   answerError?: string;
@@ -264,8 +264,8 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
   const effectiveDuration = duration || voice?.durationSec || recorder.elapsedSeconds || 0;
   const progressPercent = effectiveDuration > 0 ? (currentTime / effectiveDuration) * 100 : 0;
   const isRecordingState = recorder.state === 'recording' || recorder.state === 'requesting';
-  /** Open-ended questions get a slightly taller comments box (still auto-grows to 200px). */
-  const commentsMinHeight = picker ? '88px' : '120px';
+  /** All comments boxes share the same height and auto-grow to 200px. */
+  const commentsMinHeight = '88px';
 
   return (
     <Card

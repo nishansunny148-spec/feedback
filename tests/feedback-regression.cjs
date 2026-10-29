@@ -77,7 +77,7 @@ async function main() {
     answerError: 'Please type or record your answer',
   }));
   assert.ok(!q9Html.includes('role="radiogroup"'));
-  assert.ok(q9Html.includes('min-height:120px'));
+  assert.ok(q9Html.includes('min-height:88px'));
   assert.ok(q9Html.includes('max-height:200px'));
   assert.ok(q9Html.includes('Please type or record your answer'));
   const props = { onSelect() {}, onStatusChange() {}, onSortChange() {}, sort: 'created_at', dir: 'desc' };
